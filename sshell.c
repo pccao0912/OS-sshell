@@ -32,11 +32,11 @@ bool redirection_check(char* cmd) {
         int length = strlen(cmd);
         int flag = 0;
         for (int i = 0; i < length; i++) {
-                if (flag == 1) {
-                        cmd[i] = ' ';
-                }
                 if (cmd[i] == '>') {
                         flag = 1;
+                }
+                if (flag == 1) {
+                        cmd[i] = ' ';
                 }
         }
         return flag;
