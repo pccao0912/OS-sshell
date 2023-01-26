@@ -128,7 +128,7 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                         separate_arg = strtok(NULL, " ");
                 }
                 args[arg_count] = NULL;
-               // int status;
+                int status;
                 pid_t pid = fork();
                 if (pid == 0) {
                         //children
@@ -150,11 +150,11 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                                 close(pipes[j-1][0]);
                                 close(pipes[j-1][1]);
                         }
-                        // pid = wait(&status);
-                        // if(j == count - 1)  {
-                        //         fprintf(stderr, "+ completed '%s' [%d]\n",
-                        //         cmd_duplicate, WEXITSTATUS(status));
-                        // }
+                        pid = wait(&status);
+                        if(j == count - 1)  {
+                                fprintf(stderr, "+ completed '%s' [%d]\n",
+                                cmd_duplicate, WEXITSTATUS(status));
+                        }
                 }
 
         }
