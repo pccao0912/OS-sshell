@@ -40,6 +40,7 @@ bool redirection_check(char* cmd) {
 
 void redirection(char* cmd) {
         int cmd_length = strlen(cmd);
+        int cut_position = 0;
         int start = 0;
         int end = 0;
         int fd;
@@ -47,6 +48,7 @@ void redirection(char* cmd) {
         for (int i = 0; i < cmd_length; i++) {
                 if (start == 0 && cmd[i] == '>') {
                         start = i;
+                        cut_position = i;
                 } else if (start != 0 && cmd[i] != ' ') {
                         start = i;
                         break;
@@ -78,9 +80,15 @@ void redirection(char* cmd) {
         // printf("text length is: %d\n", dir_len);
 
         // find the path or place that we want to use for fd
-        fd = open(directory, O_CREAT | O_WRONLY);
+        printf("Directory is %s\n", directory);
+        fd = open(directory, O_CREAT | O_WRONLY | O_TRUNC);
         dup2(fd, STDOUT_FILENO);
         close(fd);
+
+        for (int a = cut_position; a < cmd_length; ++a) {
+                cmd[a] = ' ';
+        }
+        printf("New cmd is %s\n", cmd);
 }
 
 int main(void)
@@ -115,7 +123,7 @@ int main(void)
 
                 int redirection_flag = redirection_check(cmd);
                 if (redirection_flag == 1) {
-                        redirection(Prev_cmd);
+                        redirection(cmd);
                 }
                 printf("redirection_flag: %d\n", redirection_flag);
                 struct CMD CMD = parse(CMD, cmd);
