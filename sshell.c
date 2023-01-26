@@ -41,30 +41,39 @@ void redirection(char* cmd) {
         int cmd_length = strlen(cmd);
         int start = 0;
         int end = 0;
-        int fd;
+        // int fd;
         // use two pointers start and end to track the text that we want to use
         for (int i = 0; i < cmd_length; i++) {
-             if (start == 0 && cmd[i] == ' ' && cmd[i+1] != ' ') {
-                start = i + 1;
-             } else if (cmd[i] == '>') {
-                if (cmd[i-1] == ' ') {
-                        end = i - 2;
-                } else {
-                        end = i - 1;
+                if (start == 0 && cmd[i] == '>') {
+                        start = i;
+                } else if (start != 0 && cmd[i] != ' ') {
+                        start = i;
+                        break;
                 }
-             }
         }
+
+        printf("start is: %d\n", start);
+
+        for (int j = start; j < cmd_length; j++) {
+                if (cmd[j] == ' ') {
+                        end = j - 1;
+                        break;
+                }
+                end = j;
+        }
+
+        printf("end is: %d\n", end);
         // creat a string according to the length(end - start)
-        int text_len = end - start + 1;
-        char text[text_len];
+        int dir_len = end - start + 1;
+        char directory[dir_len];
         // copy the string content from cmd
-        for (int j = 0 ; j < text_len; j++) {
-                text[j] = cmd[j + start];
+        for (int k = 0 ; k < dir_len; k++) {
+                directory[k] = cmd[k + start];
         }
         // end the string
-        text[text_len] = '\0';
-        printf("text is: %s\n", text);
-        printf("text length is: %d\n", text_len);
+        directory[dir_len] = '\0';
+        printf("text is: %s\n", directory);
+        printf("text length is: %d\n", dir_len);
 
         // find the path or place that we want to use for fd
 
@@ -101,12 +110,11 @@ int main(void)
                         *nl = '\0';
 
                 int redirection_flag = redirection_check(cmd);
-                // printf("redirection_flag: %d\n", redirection_flag);
-                struct CMD CMD = parse(CMD, cmd);
-
                 if (redirection_flag == 1) {
-                        redirection(cmd);
+                        redirection(Prev_cmd);
                 }
+                printf("redirection_flag: %d\n", redirection_flag);
+                struct CMD CMD = parse(CMD, cmd);
                 /* Builtin command */
                 if (!strcmp(CMD.args[0], "exit")) {
                         fprintf(stderr, "Bye...\n");
