@@ -98,7 +98,7 @@ int main(void)
                         if (pid > 0) {
                                 pid = wait(&status);
                                 
-                                fprintf(stdout, "+ completedd '%s' [%d]\n",
+                                fprintf(stdout, "+ completed '%s' [%d]\n",
                                 Prev_cmd, WEXITSTATUS(status));
                                 
                         }
