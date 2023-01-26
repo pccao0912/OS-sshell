@@ -57,6 +57,7 @@ int main(void)
                         *nl = '\0';
 
                 struct CMD CMD = parse(CMD, cmd);
+                check_redirection();
 
                 /* Builtin command */
                 if (!strcmp(CMD.args[0], "exit")) {
