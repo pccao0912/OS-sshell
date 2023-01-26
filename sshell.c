@@ -2,15 +2,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#include <stdbool.h>
 #include <sys/wait.h>
+
 #define CMDLINE_MAX 512
 #define ARGS_MAX 16
 #define TOKEN_MAX 32
 
 struct CMD {
         char *args[ARGS_MAX];
-        int redirection;
 };
 
 struct CMD parse(struct CMD command, char* cmd) {
@@ -28,14 +28,16 @@ struct CMD parse(struct CMD command, char* cmd) {
         return command;
 }
 
-void redirection(struct CMD command, char *cmd) {
-        for (unsigned int i = 0; i <= strlen(cmd); i++) {
+bool redirection_check(char* cmd) {
+        int length = strlen(cmd);
+        for (int i = 0; i < length; i++) {
                 if (cmd[i] == '>') {
-                        command.redirection = 1;
-                        printf("Redirection flag: %d\n",command.redirection);
+                        return 1;
                 }
-        } 
+        }
+        return 0;
 }
+
 int main(void)
 {
         char cmd[CMDLINE_MAX];
@@ -64,10 +66,11 @@ int main(void)
                 nl = strchr(Prev_cmd, '\n');
                 if (nl)
                         *nl = '\0';
+
                 
-                struct CMD CMD;
-                redirection(CMD,cmd);
-                CMD = parse(CMD, cmd);
+                int redirection_flag = redirection_check(cmd);
+                printf("redirection_flag: %d\n", redirection_flag);
+                struct CMD CMD = parse(CMD, cmd);
 
                 /* Builtin command */
                 if (!strcmp(CMD.args[0], "exit")) {
@@ -108,6 +111,7 @@ int main(void)
                         }
                         if (pid > 0) {
                                 pid = wait(&status);
+                                
                                 fprintf(stdout, "+ completed '%s' [%d]\n",
                                 Prev_cmd, WEXITSTATUS(status));
                                 
