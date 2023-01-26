@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 #define CMDLINE_MAX 512
 #define ARGS_MAX 16
@@ -41,7 +42,7 @@ void redirection(char* cmd) {
         int cmd_length = strlen(cmd);
         int start = 0;
         int end = 0;
-        // int fd;
+        int fd;
         // use two pointers start and end to track the text that we want to use
         for (int i = 0; i < cmd_length; i++) {
                 if (start == 0 && cmd[i] == '>') {
@@ -52,7 +53,7 @@ void redirection(char* cmd) {
                 }
         }
 
-        printf("start is: %d\n", start);
+        // printf("start is: %d\n", start);
 
         for (int j = start; j < cmd_length; j++) {
                 if (cmd[j] == ' ') {
@@ -62,7 +63,8 @@ void redirection(char* cmd) {
                 end = j;
         }
 
-        printf("end is: %d\n", end);
+        // printf("end is: %d\n", end);
+
         // creat a string according to the length(end - start)
         int dir_len = end - start + 1;
         char directory[dir_len];
@@ -72,11 +74,13 @@ void redirection(char* cmd) {
         }
         // end the string
         directory[dir_len] = '\0';
-        printf("text is: %s\n", directory);
-        printf("text length is: %d\n", dir_len);
+        // printf("text is: %s\n", directory);
+        // printf("text length is: %d\n", dir_len);
 
         // find the path or place that we want to use for fd
-
+        fd = open(directory, O_CREAT | O_WRONLY);
+        dup2(fd, STDOUT_FILENO);
+        close(fd);
 }
 
 int main(void)
