@@ -9,6 +9,7 @@
 #define CMDLINE_MAX 512
 #define ARGS_MAX 16
 #define TOKEN_MAX 32
+#define MAX_PIPE 4
 
 struct CMD {
         char *args[ARGS_MAX];
@@ -41,6 +42,7 @@ bool redirection_check(char* cmd) {
         }
         return flag;
 }
+
 
 void redirection(char* cmd) {
         int cmd_length = strlen(cmd);
@@ -92,6 +94,17 @@ void redirection(char* cmd) {
         close(fd);
 }
 
+bool pipline_check(char *cmd) {
+        int Pip_flag = 0;
+        for (int i = 0; i <= strlen(cmd); i++) {
+                if(cmd[i] == '|') {
+                        Pip_flag = 1;
+                }
+        }
+        return Pip_flag;
+}
+
+
 int main(void)
 {
         char cmd[CMDLINE_MAX];
@@ -123,6 +136,8 @@ int main(void)
                         *nl = '\0';
 
                 int redirection_flag = redirection_check(cmd);
+                int pipline_flag = pipline_check(cmd);
+                printf("Pipline_flag: %d\n", pipline_flag);
                 // printf("redirection_flag: %d\n", redirection_flag);
                 struct CMD CMD = parse(CMD, cmd);
                 /* Builtin command */
