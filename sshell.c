@@ -10,6 +10,7 @@
 
 struct CMD {
         char *args[ARGS_MAX];
+        int redirection;
 };
 
 struct CMD parse(struct CMD command, char* cmd) {
@@ -27,6 +28,14 @@ struct CMD parse(struct CMD command, char* cmd) {
         return command;
 }
 
+void redirection(struct CMD command, char *cmd) {
+        for (unsigned int i = 0; i <= strlen(cmd); i++) {
+                if (cmd[i] == '>') {
+                        command.redirection = 1;
+                        printf("Redirection flag: %d\n",command.redirection);
+                }
+        } 
+}
 int main(void)
 {
         char cmd[CMDLINE_MAX];
@@ -55,9 +64,10 @@ int main(void)
                 nl = strchr(Prev_cmd, '\n');
                 if (nl)
                         *nl = '\0';
-
-                struct CMD CMD = parse(CMD, cmd);
-                check_redirection();
+                
+                struct CMD CMD;
+                redirection(CMD,cmd);
+                CMD = parse(CMD, cmd);
 
                 /* Builtin command */
                 if (!strcmp(CMD.args[0], "exit")) {
@@ -98,7 +108,6 @@ int main(void)
                         }
                         if (pid > 0) {
                                 pid = wait(&status);
-                                
                                 fprintf(stdout, "+ completed '%s' [%d]\n",
                                 Prev_cmd, WEXITSTATUS(status));
                                 
