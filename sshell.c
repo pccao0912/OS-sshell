@@ -96,7 +96,8 @@ void redirection(char* cmd) {
 
 bool pipeline_check(char *cmd) {
         int Pip_flag = 0;
-        for (int i = 0; i <= strlen(cmd); i++) {
+        int cmd_length = strlen(cmd);
+        for (int i = 0; i <= cmd_length; i++) {
                 if(cmd[i] == '|') {
                         Pip_flag = 1;
                 }
