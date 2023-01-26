@@ -94,7 +94,7 @@ void redirection(char* cmd) {
         close(fd);
 }
 
-bool pipline_check(char *cmd) {
+bool pipeline_check(char *cmd) {
         int Pip_flag = 0;
         for (int i = 0; i <= strlen(cmd); i++) {
                 if(cmd[i] == '|') {
@@ -136,7 +136,7 @@ int main(void)
                         *nl = '\0';
 
                 int redirection_flag = redirection_check(cmd);
-                int pipline_flag = pipline_check(cmd);
+                int pipline_flag = pipeline_check(cmd);
                 printf("Pipline_flag: %d\n", pipline_flag);
                 // printf("redirection_flag: %d\n", redirection_flag);
                 struct CMD CMD = parse(CMD, cmd);
