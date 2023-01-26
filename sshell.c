@@ -108,14 +108,17 @@ void pipeline(char *cmd, char* cmd_duplicate) {
         char *token = strtok(cmd, "|");
         char *cmds[MAX_PIPE];
         int count = 0;
-        char *args[ARGS_MAX];
         while (token != NULL) {
                 cmds[count] = token;
                 token = strtok(NULL, "|");
                 count ++ ;
         }
-        int pipes[MAX_PIPE][2];   
+        int pipes[count][2];
+        for (int j = 0; j< count; j++) {
+                pipe(pipes[j]);
+        }
         for (int j = 0; j< count; j ++) {
+                char *args[ARGS_MAX];
                 int arg_count = 0;
                 char *separate_arg = strtok(cmds[j]," ");
                 while (separate_arg != NULL) {
@@ -125,9 +128,7 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                         separate_arg = strtok(NULL, " ");
                 }
                 args[arg_count] = NULL;
-
-                pipe(pipes[j]);
-                int status;
+               // int status;
                 pid_t pid = fork();
                 if (pid == 0) {
                         //children
@@ -136,7 +137,7 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                                 dup2(pipes[j-1][0], STDIN_FILENO);
                                 close(pipes[j-1][0]);
                         }
-                        if (j< count) {
+                        if (j< count-1) {
                                 close(pipes[j][0]);
                                 dup2(pipes[j][1], STDOUT_FILENO);
                                 close(pipes[j][1]);
@@ -149,11 +150,11 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                                 close(pipes[j-1][0]);
                                 close(pipes[j-1][1]);
                         }
-                        pid = wait(&status);
-                        if(j == count - 1)  {
-                                fprintf(stderr, "+ completed '%s' [%d]\n",
-                                cmd_duplicate, WEXITSTATUS(status));
-                        }
+                        // pid = wait(&status);
+                        // if(j == count - 1)  {
+                        //         fprintf(stderr, "+ completed '%s' [%d]\n",
+                        //         cmd_duplicate, WEXITSTATUS(status));
+                        // }
                 }
 
         }
