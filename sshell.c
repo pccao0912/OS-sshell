@@ -30,17 +30,20 @@ struct CMD parse(struct CMD command, char* cmd) {
 
 bool redirection_check(char* cmd) {
         int length = strlen(cmd);
+        int flag = 0;
         for (int i = 0; i < length; i++) {
+                if (flag == 1) {
+                        cmd[i] = ' ';
+                }
                 if (cmd[i] == '>') {
-                        return 1;
+                        flag = 1;
                 }
         }
-        return 0;
+        return flag;
 }
 
 void redirection(char* cmd) {
         int cmd_length = strlen(cmd);
-        int cut_position = 0;
         int start = 0;
         int end = 0;
         int fd;
@@ -48,7 +51,6 @@ void redirection(char* cmd) {
         for (int i = 0; i < cmd_length; i++) {
                 if (start == 0 && cmd[i] == '>') {
                         start = i;
-                        cut_position = i;
                 } else if (start != 0 && cmd[i] != ' ') {
                         start = i;
                         break;
@@ -80,15 +82,14 @@ void redirection(char* cmd) {
         // printf("text length is: %d\n", dir_len);
 
         // find the path or place that we want to use for fd
-        printf("Directory is %s\n", directory);
+        // printf("Directory is %s\n", directory);
         fd = open(directory, O_CREAT | O_WRONLY | O_TRUNC);
+        if (fd < 0) {
+                perror("open");
+                exit(EXIT_FAILURE);
+        }
         dup2(fd, STDOUT_FILENO);
         close(fd);
-
-        for (int a = cut_position; a < cmd_length; ++a) {
-                cmd[a] = ' ';
-        }
-        printf("New cmd is %s\n", cmd);
 }
 
 int main(void)
@@ -122,10 +123,7 @@ int main(void)
                         *nl = '\0';
 
                 int redirection_flag = redirection_check(cmd);
-                if (redirection_flag == 1) {
-                        redirection(cmd);
-                }
-                printf("redirection_flag: %d\n", redirection_flag);
+                // printf("redirection_flag: %d\n", redirection_flag);
                 struct CMD CMD = parse(CMD, cmd);
                 /* Builtin command */
                 if (!strcmp(CMD.args[0], "exit")) {
@@ -160,6 +158,9 @@ int main(void)
                         //char *args[] = {cmd,"-u",NULL};
                         pid = fork();
                         if (pid == 0) {
+                                if (redirection_flag == 1) {
+                                        redirection(cmd);
+                                }
                                 execvp(CMD.args[0],CMD.args);
                                 perror("execvp");
                                 exit(1);
@@ -168,7 +169,6 @@ int main(void)
                                 pid = wait(&status);
                                 fprintf(stdout, "+ completed '%s' [%d]\n",
                                 Prev_cmd, WEXITSTATUS(status));
-                                
                         }
                 }
         }
