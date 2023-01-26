@@ -102,11 +102,11 @@ int main(void)
 
                 int redirection_flag = redirection_check(cmd);
                 // printf("redirection_flag: %d\n", redirection_flag);
+                struct CMD CMD = parse(CMD, cmd);
+
                 if (redirection_flag == 1) {
                         redirection(cmd);
                 }
-                struct CMD CMD = parse(CMD, cmd);
-
                 /* Builtin command */
                 if (!strcmp(CMD.args[0], "exit")) {
                         fprintf(stderr, "Bye...\n");
