@@ -159,7 +159,7 @@ int main(void)
                         pid = fork();
                         if (pid == 0) {
                                 if (redirection_flag == 1) {
-                                        redirection(cmd);
+                                        redirection(Prev_cmd);
                                 }
                                 execvp(CMD.args[0],CMD.args);
                                 perror("execvp");
