@@ -24,7 +24,6 @@ struct CMD parse(struct CMD command, char* cmd) {
                 index++;
         }
         command.args[index] = NULL;
-        
         return command;
 }
 
@@ -67,7 +66,6 @@ int main(void)
                 if (nl)
                         *nl = '\0';
 
-                
                 int redirection_flag = redirection_check(cmd);
                 printf("redirection_flag: %d\n", redirection_flag);
                 struct CMD CMD = parse(CMD, cmd);
@@ -111,7 +109,6 @@ int main(void)
                         }
                         if (pid > 0) {
                                 pid = wait(&status);
-                                
                                 fprintf(stdout, "+ completed '%s' [%d]\n",
                                 Prev_cmd, WEXITSTATUS(status));
                                 
