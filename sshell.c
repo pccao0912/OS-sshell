@@ -23,13 +23,14 @@ struct CMD parse(struct CMD command, char* cmd) {
                 index++;
         }
         command.args[index] = NULL;
+        
         return command;
 }
 
 int main(void)
 {
         char cmd[CMDLINE_MAX];
-
+        char Prev_cmd[CMDLINE_MAX];
         while (1) {
                 char *nl;
                 //int retval;
@@ -40,6 +41,7 @@ int main(void)
 
                 /* Get command line */
                 fgets(cmd, CMDLINE_MAX, stdin);
+                strcpy(Prev_cmd, cmd);
                 /* Print command line if stdin is not provided by terminal */
                 if (!isatty(STDIN_FILENO)) {
                         printf("%s", cmd);
@@ -50,6 +52,9 @@ int main(void)
                 nl = strchr(cmd, '\n');
                 if (nl)
                         *nl = '\0';
+                nl = strchr(Prev_cmd, '\n');
+                if (nl)
+                        *nl = '\0';
 
                 struct CMD CMD = parse(CMD, cmd);
 
@@ -57,24 +62,24 @@ int main(void)
                 if (!strcmp(CMD.args[0], "exit")) {
                         fprintf(stderr, "Bye...\n");
                         fprintf(stderr, "+ completed '%s' [%d]\n",
-                                cmd, 0);
+                                Prev_cmd, 0);
                         break;
                 } else if (!strcmp(CMD.args[0], "cd")) {
                         int ret = chdir(CMD.args[1]);
                         if (ret != 0) {
                                 fprintf(stderr, "Error: cannot cd into directory");
                                 fprintf(stderr, "+ completed '%s' [%d]\n",
-                                cmd, WEXITSTATUS(ret));
+                                Prev_cmd, WEXITSTATUS(ret));
                                 break;
                         }
                         fprintf(stderr, "+ completed '%s' [%d]\n",
-                        cmd, WEXITSTATUS(ret));
+                        Prev_cmd, WEXITSTATUS(ret));
                 } else if (!strcmp(CMD.args[0], "pwd")) {
                         char* cur_path = NULL;
                         cur_path = getcwd(cur_path, 0);
                         fprintf(stderr, "%s\n", cur_path);
                         fprintf(stderr, "+ completed '%s' [%d]\n",
-                        cmd, 0);
+                        Prev_cmd, 0);
                 } else {
 
                         /* Regular command */
@@ -92,8 +97,10 @@ int main(void)
                         }
                         if (pid > 0) {
                                 pid = wait(&status);
-                                fprintf(stdout, "+ completed '%s' [%d]\n",
-                                cmd, WEXITSTATUS(status));
+                                
+                                fprintf(stdout, "+ completedd '%s' [%d]\n",
+                                Prev_cmd, WEXITSTATUS(status));
+                                
                         }
                 }
         }
