@@ -152,7 +152,6 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                                 close(pipes[j-1][0]);
                                 close(pipes[j-1][1]);
                         }
-                        
                         if(j == count - 1)  {
                                 pid = wait(&status);
                                 fprintf(stderr, "+ completed '%s' ", cmd_duplicate);
@@ -167,6 +166,56 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                 }
 
         }    
+}
+
+void execution(char Prev_cmd[], char cmd[], int redirection_flag) {
+        struct CMD CMD = parse(CMD, cmd);
+        /* Builtin command */
+        if (!strcmp(CMD.args[0], "exit")) {
+                fprintf(stderr, "Bye...\n");
+                fprintf(stderr, "+ completed '%s' [%d]\n",
+                        Prev_cmd, 0);
+                return;
+        } else if (!strcmp(CMD.args[0], "cd")) {
+                int ret = chdir(CMD.args[1]);
+                if (ret != 0) {
+                        fprintf(stderr, "Error: cannot cd into directory");
+                        fprintf(stderr, "+ completed '%s' [%d]\n",
+                        Prev_cmd, WEXITSTATUS(ret));
+                        return;
+                }
+                fprintf(stderr, "+ completed '%s' [%d]\n",
+                Prev_cmd, WEXITSTATUS(ret));
+        } else if (!strcmp(CMD.args[0], "pwd")) {
+                char* cur_path = NULL;
+                cur_path = getcwd(cur_path, 0);
+                fprintf(stderr, "%s\n", cur_path);
+                fprintf(stderr, "+ completed '%s' [%d]\n",
+                Prev_cmd, 0);
+        } else {
+
+                /* Regular command */
+                // retval = system(cmd);
+                // fprintf(stdout, "Return status value for '%s': %d\n",
+                //         cmd, retval);
+                pid_t pid = 0;
+                int status;
+                //char *args[] = {cmd,"-u",NULL};
+                pid = fork();
+                if (pid == 0) {
+                        if (redirection_flag == 1) {
+                                redirection(Prev_cmd);
+                        }
+                        execvp(CMD.args[0],CMD.args);
+                        perror("execvp");
+                        exit(1);
+                }
+                if (pid > 0) {
+                        pid = wait(&status);
+                        fprintf(stdout, "+ completed '%s' [%d]\n",
+                        Prev_cmd, WEXITSTATUS(status));
+                }
+        }
 }
 
 int main(void)
@@ -206,55 +255,8 @@ int main(void)
                         pipeline(pipeline_cmd, pipeline_cmd_arg2);
                 } else  {
                 // printf("redirection_flag: %d\n", redirection_flag);
-                        struct CMD CMD = parse(CMD, cmd);
-                        /* Builtin command */
-                        if (!strcmp(CMD.args[0], "exit")) {
-                                fprintf(stderr, "Bye...\n");
-                                fprintf(stderr, "+ completed '%s' [%d]\n",
-                                        Prev_cmd, 0);
-                                break;
-                        } else if (!strcmp(CMD.args[0], "cd")) {
-                                int ret = chdir(CMD.args[1]);
-                                if (ret != 0) {
-                                        fprintf(stderr, "Error: cannot cd into directory");
-                                        fprintf(stderr, "+ completed '%s' [%d]\n",
-                                        Prev_cmd, WEXITSTATUS(ret));
-                                        break;
-                                }
-                                fprintf(stderr, "+ completed '%s' [%d]\n",
-                                Prev_cmd, WEXITSTATUS(ret));
-                        } else if (!strcmp(CMD.args[0], "pwd")) {
-                                char* cur_path = NULL;
-                                cur_path = getcwd(cur_path, 0);
-                                fprintf(stderr, "%s\n", cur_path);
-                                fprintf(stderr, "+ completed '%s' [%d]\n",
-                                Prev_cmd, 0);
-                        } else {
-
-                                /* Regular command */
-                                // retval = system(cmd);
-                                // fprintf(stdout, "Return status value for '%s': %d\n",
-                                //         cmd, retval);
-                                pid_t pid = 0;
-                                int status;
-                                //char *args[] = {cmd,"-u",NULL};
-                                pid = fork();
-                                if (pid == 0) {
-                                        if (redirection_flag == 1) {
-                                                redirection(Prev_cmd);
-                                        }
-                                        execvp(CMD.args[0],CMD.args);
-                                        perror("execvp");
-                                        exit(1);
-                                }
-                                if (pid > 0) {
-                                        pid = wait(&status);
-                                        fprintf(stdout, "+ completed '%s' [%d]\n",
-                                        Prev_cmd, WEXITSTATUS(status));
-                                }
-                        }
+                        execution(Prev_cmd, cmd, redirection_flag);
                 }
-
         }
         return EXIT_SUCCESS;
 }
