@@ -16,19 +16,7 @@ struct CMD {
 };
 
 
-void bg_handler() {
-         pid_t pid_child;
-         int status;
-         while ((pid_child = waitpid(-1,&status,WNOHANG))>0){
-                signal(SIGCHLD, SIG_IGN);
-         }
-        //  while (()>0) {
-        //         
-        //         printf("within handler while loop\n");
-        // //         fprintf(stderr, "+ completed [%d] \n",
-        // //          WEXITSTATUS(status));
-        // }
-}
+
 
 struct CMD parse(struct CMD command, char* cmd) {
         char *token;  // current string/token
@@ -254,17 +242,19 @@ void execution(char Prev_cmd[], char cmd[], int redirection_flag, int bg_flag) {
                 // fprintf(stdout, "Return status value for '%s': %d\n",
                 //         cmd, retval);
                 pid_t pid = fork();
+                int status;
                 //char *args[] = {cmd,"-u",NULL};
                 if (pid == 0) {
                         if (redirection_flag != 0) {
                                 redirection(Prev_cmd);
                         }
+                        if (bg_flag == 1)
                         execvp(CMD.args[0],CMD.args);
                         perror("execvp");
                         exit(1);
                 }
                 if (pid > 0) {
-                        int status;
+                        
                         // int bg_result;
                         //fprintf(stderr,"bg_flag :%d\n",bg_flag);
                         if (bg_flag == 1){
@@ -274,11 +264,6 @@ void execution(char Prev_cmd[], char cmd[], int redirection_flag, int bg_flag) {
                                 //         fprintf(stderr, "+ completeddddd '%s' [%d] \n",
                                 //         Prev_cmd, WEXITSTATUS(status));      
                                 // }
-                                struct sigaction sa;
-                                sigfillset(&sa.sa_mask);
-                                sa.sa_handler = bg_handler;
-                                sa.sa_flags = 0;
-                                sigaction(SIGCHLD, &sa, NULL);
      
                         } else {
                                 pid = waitpid(pid, &status, 0);
