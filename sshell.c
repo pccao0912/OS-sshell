@@ -167,7 +167,7 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
                                 dup2(pipes[j][1], STDOUT_FILENO);
                                 close(pipes[j][1]);
                         }
-                        if (redirection_flag == 1 && j == count -1) {
+                        if (redirection_flag != 0 && j == count -1) {
                                 char cmd_for_redirect[CMDLINE_MAX];
                                 strcpy(cmd_for_redirect,cmd_duplicate);
                                 printf("%s\n",cmd_for_redirect);
