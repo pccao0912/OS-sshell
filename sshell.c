@@ -136,7 +136,11 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
                         arg_count ++ ;
                         separate_arg = strtok(NULL, " ");
                 }
-                args[arg_count] = NULL;
+                if (redirection_flag == 1){
+                        args[arg_count -1] = NULL;
+                } else {
+                        args[arg_count] = NULL;
+                }
                 int status;
                 pid_t pid = fork();
                 if (pid == 0) {
