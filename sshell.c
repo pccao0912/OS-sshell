@@ -154,11 +154,11 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                         }
                         pid = wait(&status);
                         if(j == count - 1)  {
-                                status_list[j] = status;
-                                fprintf(stderr, "+ completed '%s' [%d]", cmd_duplicate, WEXITSTATUS(status));
+                                fprintf(stderr, "+ completed '%s' ", cmd_duplicate);
                                 for (int h = 0; h < count-1; h++) {
                                          fprintf(stderr, "[%d]", WEXITSTATUS(status_list[h]));
-                                 }
+                                }
+                                fprintf(stderr,"[%d]",WEXITSTATUS(status));
                                 fprintf(stderr, "\n");
                         } else {
                                 status_list[j] = WEXITSTATUS(status);
