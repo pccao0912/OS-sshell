@@ -54,7 +54,7 @@ int redirection_check(char* cmd) {
 }
 
 
-void redirection(char* cmd) {
+int redirection(char* cmd) {
         int cmd_length = strlen(cmd);
         int start = 0;
         int end = 0;
@@ -84,6 +84,7 @@ void redirection(char* cmd) {
 
         // creat a string according to the length(end - start)
         int dir_len = end - start + 1;
+        // printf("Dir length is: %d\n", dir_len);
         char directory[dir_len];
         // copy the string content from cmd
         for (int k = 0 ; k < dir_len; k++) {
@@ -91,6 +92,12 @@ void redirection(char* cmd) {
         }
         // end the string
         directory[dir_len] = '\0';
+
+        if (dir_len == 1 && directory[0] == '>') {
+                fprintf(stderr, "Error: no output file\n");
+                return 1;
+        }
+        // printf("Current dir is: %s\n", directory);
 
         // find the path or place that we want to use for fd
         if (append_flag == 1) {
@@ -100,10 +107,12 @@ void redirection(char* cmd) {
         }
         if (fd < 0) {
                 perror("open");
-                exit(EXIT_FAILURE);
+                fprintf(stderr, "Error: no output file\n");
+                return 1;
         }
         dup2(fd, STDOUT_FILENO);
         close(fd);
+        return 0;
 }
 
 bool pipeline_check(char *cmd) {
@@ -164,6 +173,7 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
                         }
                         if (redirection_flag != 0 && j == count -1) {
                                 char cmd_for_redirect[CMDLINE_MAX];
+                                int error_flag;
                                 strcpy(cmd_for_redirect,cmd_duplicate);
                                 printf("%s\n",cmd_for_redirect);
                                 char *token_redirect = strtok(cmd_for_redirect, "|");
@@ -175,7 +185,10 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
                                         token_redirect = strtok(NULL, "|");
                                         count_redirect++ ;
                                 }
-                                redirection(cmds_redirect[count_redirect-1]);
+                                error_flag = redirection(cmds_redirect[count_redirect-1]);
+                                if (error_flag != 0) {
+                                        exit(1);
+                                }
                         }
                         execvp(args[0],args);
                 } else if (pid > 0) {
@@ -206,6 +219,7 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
 
 void execution(char Prev_cmd[], char cmd[], int redirection_flag) {
         struct CMD CMD = parse(CMD, cmd);
+        int error_flag;
         if (CMD.arg_nums >= ARGS_MAX) {
                 fprintf(stderr, "Error: too many process arguments\n");
                 return;
@@ -243,7 +257,10 @@ void execution(char Prev_cmd[], char cmd[], int redirection_flag) {
                 pid = fork();
                 if (pid == 0) {
                         if (redirection_flag != 0) {
-                                redirection(Prev_cmd);
+                                error_flag = redirection(Prev_cmd);
+                                if (error_flag != 0) {
+                                        return;
+                                }
                         }
                         execvp(CMD.args[0],CMD.args);
                         perror("execvp");
