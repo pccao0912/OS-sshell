@@ -113,10 +113,15 @@ bool pipeline_check(char *cmd) {
 }
 
 void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
+        // char *redirectionfile_cmd[MAX_PIPE];
+        // char cmd_duplicate_output[CMDLINE_MAX];
+        // strcpy(cmd_duplicate_output,cmd_duplicate);
         char *token = strtok(cmd, "|");
+        // char *token_redirection = strtok(cmd_duplicate_output,"|");
         char *cmds[MAX_PIPE];
         int count = 0;
         while (token != NULL) {
+                
                 cmds[count] = token;
                 token = strtok(NULL, "|");
                 count++ ;
@@ -126,6 +131,7 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
         for (int j = 0; j < count; j++) {
                 pipe(pipes[j]);
         }
+
         for (int j = 0; j < count; j++) {
                 char *args[ARGS_MAX];
                 int arg_count = 0;
@@ -136,11 +142,7 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
                         arg_count ++ ;
                         separate_arg = strtok(NULL, " ");
                 }
-                if (redirection_flag == 1){
-                        args[arg_count -1] = NULL;
-                } else {
-                        args[arg_count] = NULL;
-                }
+                args[arg_count] = NULL;
                 int status;
                 pid_t pid = fork();
                 if (pid == 0) {
@@ -155,6 +157,21 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
                                 dup2(pipes[j][1], STDOUT_FILENO);
                                 close(pipes[j][1]);
                         }
+                        if (redirection_flag == 1 && j == count -1) {
+                                char cmd_for_redirect[CMDLINE_MAX];
+                                strcpy(cmd_for_redirect,cmd_duplicate);
+                                printf("%s\n",cmd_for_redirect);
+                                char *token_redirect = strtok(cmd_for_redirect, "|");
+                                char *cmds_redirect[MAX_PIPE];
+                                int count_redirect = 0;
+                                while (token_redirect != NULL) {
+                                        
+                                        cmds_redirect[count_redirect] = token_redirect;
+                                        token_redirect = strtok(NULL, "|");
+                                        count_redirect++ ;
+                                }
+                                redirection(cmds_redirect[count_redirect-1]);
+                        }
                         execvp(args[0],args);
                 } else if (pid > 0) {
                         //parent
@@ -163,6 +180,7 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
                                 close(pipes[j-1][1]);
                         }
                         if(j == count - 1) {
+
                                 // printf("redirection flag is: %d\n", redirection_flag);
                                 // printf("current cmd is: %s\n", cmd_duplicate);
                                 pid = waitpid(pid, &status, 0);
@@ -265,7 +283,7 @@ int main(void)
                 int pipline_flag = pipeline_check(cmd);
                 if(pipline_flag == 1) {
                         // pipeline instruction
-                        pipeline(pipeline_cmd, pipeline_cmd_arg2, redirection_flag);
+                        pipeline(cmd, pipeline_cmd_arg2, redirection_flag);
                 } else  {
                         // execution without piping
                         execution(Prev_cmd, cmd, redirection_flag);
