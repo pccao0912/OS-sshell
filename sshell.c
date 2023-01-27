@@ -115,7 +115,7 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                 count ++ ;
         }
         int pipes[count][2];
-        int status_list[count];
+        int status_list[count+1];
         for (int j = 0; j< count; j++) {
                 pipe(pipes[j]);
         }
@@ -154,13 +154,14 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                         }
                         pid = wait(&status);
                         if(j == count - 1)  {
-                                fprintf(stderr, "+ completed '%s' ", cmd_duplicate);
-                                for (int i = 0; i < count; i++) {
-                                        fprintf(stderr, "[%d]", status_list[i]);
-                                }
+                                status_list[j] = status;
+                                fprintf(stderr, "+ completed '%s' [%d]", cmd_duplicate, WEXITSTATUS(status));
+                                for (int h = 0; h < count-1; h++) {
+                                         fprintf(stderr, "[%d]", WEXITSTATUS(status_list[h]));
+                                 }
                                 fprintf(stderr, "\n");
                         } else {
-                                status_list[j] = status;
+                                status_list[j] = WEXITSTATUS(status);
                         }
                 }
 
