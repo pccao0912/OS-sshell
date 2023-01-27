@@ -156,8 +156,9 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                         if(j == count - 1)  {
                                 fprintf(stderr, "+ completed '%s' ", cmd_duplicate);
                                 for (int i = 0; i < count; i++) {
-                                        fprintf(stderr, "[%d]", status_list[count]);
+                                        fprintf(stderr, "[%d]", status_list[i]);
                                 }
+                                fprintf(stderr, "\n");
                         } else {
                                 status_list[j] = status;
                         }
