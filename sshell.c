@@ -29,15 +29,22 @@ struct CMD parse(struct CMD command, char* cmd) {
         return command;
 }
 
-bool redirection_check(char* cmd) {
+int redirection_check(char* cmd) {
         int length = strlen(cmd);
         int flag = 0;
         for (int i = 0; i < length; i++) {
                 if (cmd[i] == '>') {
-                        flag = 1;
+                        if (cmd[i + 1] == '>') {
+                                flag = 2;
+                        } else {
+                                flag = 1;
+                        }
                 }
                 if (flag == 1) {
                         cmd[i] = ' ';
+                } else if (flag == 2) {
+                        cmd[i] = ' ';
+                        cmd[i + 1] = cmd[i];
                 }
         }
         return flag;
@@ -105,7 +112,7 @@ bool pipeline_check(char *cmd) {
         return Pip_flag;
 }
 
-void pipeline(char *cmd, char* cmd_duplicate) {
+void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
         char *token = strtok(cmd, "|");
         char *cmds[MAX_PIPE];
         int count = 0;
@@ -152,6 +159,8 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                                 close(pipes[j-1][1]);
                         }
                         if(j == count - 1) {
+                                // printf("redirection flag is: %d\n", redirection_flag);
+                                // printf("current cmd is: %s\n", cmd_duplicate);
                                 pid = waitpid(pid, &status, 0);
                                 fprintf(stderr, "+ completed '%s' ", cmd_duplicate);
                                 for (int h = 0; h < count-1; h++) {
@@ -251,10 +260,10 @@ int main(void)
                 int redirection_flag = redirection_check(cmd);
                 int pipline_flag = pipeline_check(cmd);
                 if(pipline_flag == 1) {
-                        //pipeline instruction
-                        pipeline(pipeline_cmd, pipeline_cmd_arg2);
+                        // pipeline instruction
+                        pipeline(pipeline_cmd, pipeline_cmd_arg2, redirection_flag);
                 } else  {
-                // printf("redirection_flag: %d\n", redirection_flag);
+                        // execution without piping
                         execution(Prev_cmd, cmd, redirection_flag);
                 }
         }
