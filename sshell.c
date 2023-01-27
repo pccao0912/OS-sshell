@@ -112,14 +112,14 @@ void pipeline(char *cmd, char* cmd_duplicate) {
         while (token != NULL) {
                 cmds[count] = token;
                 token = strtok(NULL, "|");
-                count ++ ;
+                count++ ;
         }
         int pipes[count][2];
         int status_list[count+1];
-        for (int j = 0; j< count; j++) {
+        for (int j = 0; j < count; j++) {
                 pipe(pipes[j]);
         }
-        for (int j = 0; j< count; j ++) {
+        for (int j = 0; j < count; j++) {
                 char *args[ARGS_MAX];
                 int arg_count = 0;
                 char *separate_arg = strtok(cmds[j]," ");
@@ -139,21 +139,20 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                                 dup2(pipes[j-1][0], STDIN_FILENO);
                                 close(pipes[j-1][0]);
                         }
-                        if (j< count-1) {
+                        if (j < count - 1) {
                                 close(pipes[j][0]);
                                 dup2(pipes[j][1], STDOUT_FILENO);
                                 close(pipes[j][1]);
                         }
                         execvp(args[0],args);
-                }
-                if (pid > 0) {
+                } else if (pid > 0) {
                         //parent
                         if (j > 0) {
                                 close(pipes[j-1][0]);
                                 close(pipes[j-1][1]);
                         }
-                        if(j == count - 1)  {
-                                pid = wait(&status);
+                        if(j == count - 1) {
+                                pid = waitpid(pid, &status, 0);
                                 fprintf(stderr, "+ completed '%s' ", cmd_duplicate);
                                 for (int h = 0; h < count-1; h++) {
                                          fprintf(stderr, "[%d]", WEXITSTATUS(status_list[h]));
@@ -163,6 +162,7 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                         } else {
                                 status_list[j] = WEXITSTATUS(status);
                         }
+                        // pid = wait(&status);
                 }
 
         }    
