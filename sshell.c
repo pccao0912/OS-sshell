@@ -152,8 +152,9 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                                 close(pipes[j-1][0]);
                                 close(pipes[j-1][1]);
                         }
-                        pid = wait(&status);
+                        
                         if(j == count - 1)  {
+                                pid = wait(&status);
                                 fprintf(stderr, "+ completed '%s' ", cmd_duplicate);
                                 for (int h = 0; h < count-1; h++) {
                                          fprintf(stderr, "[%d]", WEXITSTATUS(status_list[h]));
