@@ -166,11 +166,7 @@ void pipeline(char *cmd, char* cmd_duplicate) {
                         }
                 }
 
-        }
-
-        
-
-        
+        }    
 }
 
 int main(void)
