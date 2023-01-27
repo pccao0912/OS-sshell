@@ -71,8 +71,6 @@ void redirection(char* cmd) {
                 }
         }
 
-        // printf("start is: %d\n", start);
-
         for (int j = start; j < cmd_length; j++) {
                 if (cmd[j] == ' ') {
                         end = j - 1;
@@ -80,8 +78,6 @@ void redirection(char* cmd) {
                 }
                 end = j;
         }
-
-        // printf("end is: %d\n", end);
 
         // creat a string according to the length(end - start)
         int dir_len = end - start + 1;
@@ -92,12 +88,8 @@ void redirection(char* cmd) {
         }
         // end the string
         directory[dir_len] = '\0';
-        // printf("text is: %s\n", directory);
-        // printf("text length is: %d\n", dir_len);
 
         // find the path or place that we want to use for fd
-        // printf("Directory is %s\n", directory);
-        // printf("Append flag is: %d\n", append_flag);
         if (append_flag == 1) {
                 fd = open(directory, O_CREAT | O_WRONLY | O_APPEND, 0600);
         } else {
@@ -270,7 +262,7 @@ int main(void)
                 //int retval;
 
                 /* Print prompt */
-                printf("sshell$ ");
+                printf("sshell@ucd$ ");
                 fflush(stdout);
 
                 /* Get command line */
