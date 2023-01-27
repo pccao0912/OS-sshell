@@ -1,14 +1,3 @@
-//| : : : : : : : : : : : : : : : : : : : : : : : : : : : : : : : : :”-'\,,
-//..\: : : : : : : : : : :'\: : : : : : : : : : : : : :~,,: : : : : : : : : “~-.,_
-//...\ : : : : : : : : : : :\: /: : : : : : : : : : : : : : : “,: : : : : : : : : : :"~,_
-//... .\: : : : : : : : : : :\|: : : : : : : : :_._ : : : : : : \: : : : : : : : : : : : :”- .
-//... ...\: : : : : : : : : : \: : : : : : : : ( O ) : : : : : : \: : : : : : : : : : : : : : '\._
-//... ... .\ : : : : : : : : : '\': : : : : : : :"*": : : : : : : :|: : : : : : : : : : : : : : : |0)
-//... ... ...\ : : : : : : : : : '\: : : : : : : : : : : : : : : :/: : : : : : : : : : : : : : : /""
-//... ... .....\ : : : : : : : : : \: : : : : : : : : : : : : ,-“: : : : : : : : : : : : : : : :/
-//... ... ... ...\ : : : : : : : : : \: : : : : : : : : _=" : : : : : ',_.: : : : : : : :,-“
-//... ... ... ... \,: : : : : : : : : \: :"”'~---~”" : : : : : : : : : : : : = :"”~~ '
-// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +14,21 @@
 struct CMD {
         char *args[ARGS_MAX];
 };
+
+
+void bg_handler() {
+         pid_t pid_child;
+         int status;
+         while ((pid_child = waitpid(-1,&status,WNOHANG))>0){
+                signal(SIGCHLD, SIG_IGN);
+         }
+        //  while (()>0) {
+        //         
+        //         printf("within handler while loop\n");
+        // //         fprintf(stderr, "+ completed [%d] \n",
+        // //          WEXITSTATUS(status));
+        // }
+}
 
 struct CMD parse(struct CMD command, char* cmd) {
         char *token;  // current string/token
@@ -82,6 +86,8 @@ void redirection(char* cmd) {
                 }
         }
 
+        // printf("start is: %d\n", start);
+
         for (int j = start; j < cmd_length; j++) {
                 if (cmd[j] == ' ') {
                         end = j - 1;
@@ -89,6 +95,8 @@ void redirection(char* cmd) {
                 }
                 end = j;
         }
+
+        // printf("end is: %d\n", end);
 
         // creat a string according to the length(end - start)
         int dir_len = end - start + 1;
@@ -99,8 +107,12 @@ void redirection(char* cmd) {
         }
         // end the string
         directory[dir_len] = '\0';
+        // printf("text is: %s\n", directory);
+        // printf("text length is: %d\n", dir_len);
 
         // find the path or place that we want to use for fd
+        // printf("Directory is %s\n", directory);
+        // printf("Append flag is: %d\n", append_flag);
         if (append_flag == 1) {
                 fd = open(directory, O_CREAT | O_WRONLY | O_APPEND, 0600);
         } else {
@@ -212,14 +224,14 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
         }    
 }
 
-void execution(char Prev_cmd[], char cmd[], int redirection_flag) {
+void execution(char Prev_cmd[], char cmd[], int redirection_flag, int bg_flag) {
         struct CMD CMD = parse(CMD, cmd);
         /* Builtin command */
         if (!strcmp(CMD.args[0], "exit")) {
                 fprintf(stderr, "Bye...\n");
                 fprintf(stderr, "+ completed '%s' [%d]\n",
                         Prev_cmd, 0);
-                return;
+                exit(0);
         } else if (!strcmp(CMD.args[0], "cd")) {
                 int ret = chdir(CMD.args[1]);
                 if (ret != 0) {
@@ -241,10 +253,8 @@ void execution(char Prev_cmd[], char cmd[], int redirection_flag) {
                 // retval = system(cmd);
                 // fprintf(stdout, "Return status value for '%s': %d\n",
                 //         cmd, retval);
-                pid_t pid = 0;
-                int status;
+                pid_t pid = fork();
                 //char *args[] = {cmd,"-u",NULL};
-                pid = fork();
                 if (pid == 0) {
                         if (redirection_flag != 0) {
                                 redirection(Prev_cmd);
@@ -254,30 +264,71 @@ void execution(char Prev_cmd[], char cmd[], int redirection_flag) {
                         exit(1);
                 }
                 if (pid > 0) {
-                        pid = waitpid(pid, &status, 0);
-                        fprintf(stderr, "+ completed '%s' [%d]\n",
-                        Prev_cmd, WEXITSTATUS(status));
+                        int status;
+                        // int bg_result;
+                        //fprintf(stderr,"bg_flag :%d\n",bg_flag);
+                        if (bg_flag == 1){
+                                printf("ruuning in the background %d\n",pid);
+                                // bg_result = waitpid(pid,&status,WNOHANG);
+                                // if(bg_result == pid){
+                                //         fprintf(stderr, "+ completeddddd '%s' [%d] \n",
+                                //         Prev_cmd, WEXITSTATUS(status));      
+                                // }
+                                struct sigaction sa;
+                                sigfillset(&sa.sa_mask);
+                                sa.sa_handler = bg_handler;
+                                sa.sa_flags = 0;
+                                sigaction(SIGCHLD, &sa, NULL);
+     
+                        } else {
+                                pid = waitpid(pid, &status, 0);
+                                fprintf(stderr, "+ completedd '%s' [%d] \n",
+                                Prev_cmd, WEXITSTATUS(status));
+                        } 
+
                 }
         }
 }
 
+
+bool background_check(char *cmd) {
+        int bg_flag = 0;
+        int cmd_length = strlen(cmd);
+        for (int i = 0; i <= cmd_length; i++) {
+                if(cmd[i] == '&') {
+                        bg_flag = 1;
+                        cmd[i] = ' ';
+                }
+        }
+        return bg_flag;
+}
+
 int main(void)
 {
+        
         char cmd[CMDLINE_MAX];
         char pipeline_cmd[CMDLINE_MAX];
         char pipeline_cmd_arg2[CMDLINE_MAX];
-        char Prev_cmd[CMDLINE_MAX];  
+        char Prev_cmd[CMDLINE_MAX];
         // since parse would change the cmd, so creating a new string to store the origin version
         while (1) {
+                
                 char *nl;
                 //int retval;
 
                 /* Print prompt */
-                printf("sshell@ucd$ ");
+                printf("sshell$ ");
                 fflush(stdout);
 
                 /* Get command line */
                 fgets(cmd, CMDLINE_MAX, stdin);
+                if(!(strcmp(cmd,"\n"))) {
+                        continue;
+                }
+                pid_t pid_child;
+                int status;
+                pid_child = getpid();
+                waitpid(pid_child,&status, WNOHANG);
                 /* Print command line if stdin is not provided by terminal */
                 if (!isatty(STDIN_FILENO)) {
                         printf("%s", cmd);
@@ -293,12 +344,13 @@ int main(void)
                 strcpy(pipeline_cmd_arg2, cmd);   
                 int redirection_flag = redirection_check(cmd);
                 int pipline_flag = pipeline_check(cmd);
+                int bg_flag = background_check(cmd);
                 if(pipline_flag == 1) {
                         // pipeline instruction
                         pipeline(cmd, pipeline_cmd_arg2, redirection_flag);
                 } else  {
                         // execution without piping
-                        execution(Prev_cmd, cmd, redirection_flag);
+                        execution(Prev_cmd, cmd, redirection_flag, bg_flag);
                 }
         }
         return EXIT_SUCCESS;
