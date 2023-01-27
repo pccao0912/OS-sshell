@@ -234,7 +234,6 @@ void execution(char Prev_cmd[], char cmd[], int redirection_flag) {
                 fprintf(stderr, "+ completed '%s' [%d]\n",
                 Prev_cmd, 0);
         } else {
-
                 /* Regular command */
                 // retval = system(cmd);
                 // fprintf(stdout, "Return status value for '%s': %d\n",
@@ -252,8 +251,8 @@ void execution(char Prev_cmd[], char cmd[], int redirection_flag) {
                         exit(1);
                 }
                 if (pid > 0) {
-                        pid = wait(&status);
-                        fprintf(stdout, "+ completed '%s' [%d]\n",
+                        pid = waitpid(pid, &status, 0);
+                        fprintf(stderr, "+ completed '%s' [%d]\n",
                         Prev_cmd, WEXITSTATUS(status));
                 }
         }
