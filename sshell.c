@@ -14,6 +14,7 @@
 struct CMD {
         char *args[ARGS_MAX];
         int arg_nums;
+        int pipe_nums;
 };
 
 struct CMD parse(struct CMD command, char* cmd) {
@@ -115,18 +116,20 @@ int redirection(char* cmd) {
         return 0;
 }
 
-bool pipeline_check(char *cmd) {
+bool pipeline_check(struct CMD *CMD, char *cmd) {
         int Pip_flag = 0;
         int cmd_length = strlen(cmd);
+        CMD->pipe_nums = 0;
         for (int i = 0; i <= cmd_length; i++) {
                 if(cmd[i] == '|') {
                         Pip_flag = 1;
+                        CMD->pipe_nums++;
                 }
         }
         return Pip_flag;
 }
 
-void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
+void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_flag) {
         // char *redirectionfile_cmd[MAX_PIPE];
         // char cmd_duplicate_output[CMDLINE_MAX];
         // strcpy(cmd_duplicate_output,cmd_duplicate);
@@ -135,10 +138,13 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
         char *cmds[MAX_PIPE];
         int count = 0;
         while (token != NULL) {
-                
                 cmds[count] = token;
                 token = strtok(NULL, "|");
-                count++ ;
+                count++;
+        }
+        if (CMD->pipe_nums >= count) {
+                fprintf(stderr, "Error: missing command\n");
+                return;
         }
         int pipes[count][2];
         int status_list[count+1];
@@ -153,7 +159,7 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
                 while (separate_arg != NULL) {
                         args[arg_count] = separate_arg;
                         //printf("%s\n",args[arg_count]);
-                        arg_count ++ ;
+                        arg_count++;
                         separate_arg = strtok(NULL, " ");
                 }
                 args[arg_count] = NULL;
@@ -279,7 +285,8 @@ int main(void)
         char cmd[CMDLINE_MAX];
         char pipeline_cmd[CMDLINE_MAX];
         char pipeline_cmd_arg2[CMDLINE_MAX];
-        char Prev_cmd[CMDLINE_MAX];  
+        char Prev_cmd[CMDLINE_MAX];
+        struct CMD CMD;
         // since parse would change the cmd, so creating a new string to store the origin version
         while (1) {
                 char *nl;
@@ -305,10 +312,10 @@ int main(void)
                 strcpy(pipeline_cmd, cmd);
                 strcpy(pipeline_cmd_arg2, cmd);   
                 int redirection_flag = redirection_check(cmd);
-                int pipline_flag = pipeline_check(cmd);
+                int pipline_flag = pipeline_check(&CMD, cmd);
                 if(pipline_flag == 1) {
                         // pipeline instruction
-                        pipeline(cmd, pipeline_cmd_arg2, redirection_flag);
+                        pipeline(&CMD, cmd, pipeline_cmd_arg2, redirection_flag);
                 } else  {
                         // execution without piping
                         execution(Prev_cmd, cmd, redirection_flag);
