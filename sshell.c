@@ -13,20 +13,20 @@
 
 struct CMD {
         char *args[ARGS_MAX];
+        int arg_nums;
 };
-
-
-
 
 struct CMD parse(struct CMD command, char* cmd) {
         char *token;  // current string/token
         int index = 0;
         token = strtok(cmd, " ");
+        command.arg_nums = 0;
         while (token != NULL) {
                 // method to keep reading words from a string from https://www.runoob.com/cprogramming/c-function-strtok.html
                 command.args[index] = token;
                 token = strtok(NULL, " ");
                 index++;
+                command.arg_nums = index;
         }
         command.args[index] = NULL;
         return command;
@@ -214,12 +214,16 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
 
 void execution(char Prev_cmd[], char cmd[], int redirection_flag, int bg_flag) {
         struct CMD CMD = parse(CMD, cmd);
+        if (CMD.arg_nums >= ARGS_MAX) {
+                fprintf(stderr, "Error: too many process arguments\n");
+                return;
+        }
         /* Builtin command */
         if (!strcmp(CMD.args[0], "exit")) {
                 fprintf(stderr, "Bye...\n");
                 fprintf(stderr, "+ completed '%s' [%d]\n",
                         Prev_cmd, 0);
-                exit(0);
+                return;
         } else if (!strcmp(CMD.args[0], "cd")) {
                 int ret = chdir(CMD.args[1]);
                 if (ret != 0) {
@@ -248,7 +252,6 @@ void execution(char Prev_cmd[], char cmd[], int redirection_flag, int bg_flag) {
                         if (redirection_flag != 0) {
                                 redirection(Prev_cmd);
                         }
-                        if (bg_flag == 1)
                         execvp(CMD.args[0],CMD.args);
                         perror("execvp");
                         exit(1);
