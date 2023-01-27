@@ -56,9 +56,14 @@ void redirection(char* cmd) {
         int start = 0;
         int end = 0;
         int fd;
+        int append_flag = 0;
         // use two pointers start and end to track the text that we want to use
         for (int i = 0; i < cmd_length; i++) {
-                if (start == 0 && cmd[i] == '>') {
+                if (start == 0 && cmd[i] == '>' && cmd[i+1] == '>') {
+                        append_flag = 1;
+                        start = i + 1;
+                        i++;
+                } else if (start == 0 && cmd[i] == '>' && cmd[i+1] != '>') {
                         start = i;
                 } else if (start != 0 && cmd[i] != ' ') {
                         start = i;
@@ -92,7 +97,12 @@ void redirection(char* cmd) {
 
         // find the path or place that we want to use for fd
         // printf("Directory is %s\n", directory);
-        fd = open(directory, O_CREAT | O_WRONLY | O_TRUNC);
+        // printf("Append flag is: %d\n", append_flag);
+        if (append_flag == 1) {
+                fd = open(directory, O_WRONLY | O_APPEND);
+        } else {
+                fd = open(directory, O_CREAT | O_WRONLY | O_TRUNC);
+        }
         if (fd < 0) {
                 perror("open");
                 exit(EXIT_FAILURE);
@@ -234,7 +244,7 @@ void execution(char Prev_cmd[], char cmd[], int redirection_flag) {
                 //char *args[] = {cmd,"-u",NULL};
                 pid = fork();
                 if (pid == 0) {
-                        if (redirection_flag == 1) {
+                        if (redirection_flag != 0) {
                                 redirection(Prev_cmd);
                         }
                         execvp(CMD.args[0],CMD.args);
