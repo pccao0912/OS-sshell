@@ -99,9 +99,9 @@ void redirection(char* cmd) {
         // printf("Directory is %s\n", directory);
         // printf("Append flag is: %d\n", append_flag);
         if (append_flag == 1) {
-                fd = open(directory, O_CREAT | O_WRONLY | O_APPEND);
+                fd = open(directory, O_CREAT | O_WRONLY | O_APPEND, 0600);
         } else {
-                fd = open(directory, O_CREAT | O_WRONLY | O_TRUNC);
+                fd = open(directory, O_CREAT | O_WRONLY | O_TRUNC, 0600);
         }
         if (fd < 0) {
                 perror("open");
@@ -230,7 +230,7 @@ void execution(char Prev_cmd[], char cmd[], int redirection_flag) {
         } else if (!strcmp(CMD.args[0], "pwd")) {
                 char* cur_path = NULL;
                 cur_path = getcwd(cur_path, 0);
-                fprintf(stderr, "%s\n", cur_path);
+                fprintf(stdout, "%s\n", cur_path);
                 fprintf(stderr, "+ completed '%s' [%d]\n",
                 Prev_cmd, 0);
         } else {
