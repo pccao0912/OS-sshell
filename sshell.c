@@ -99,7 +99,7 @@ void redirection(char* cmd) {
         // printf("Directory is %s\n", directory);
         // printf("Append flag is: %d\n", append_flag);
         if (append_flag == 1) {
-                fd = open(directory, O_WRONLY | O_APPEND);
+                fd = open(directory, O_CREAT | O_WRONLY | O_APPEND);
         } else {
                 fd = open(directory, O_CREAT | O_WRONLY | O_TRUNC);
         }
