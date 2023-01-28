@@ -20,11 +20,22 @@ struct CMD {
 int commandCheck(char *cmd) {
         int cmd_length = strlen(cmd);
         int valid_char = 0;
+        int redirection_position = 0;
         for (int i = 0; i < cmd_length; i++) {
                 if(valid_char == 0 && cmd[i] == '>') {
                         return 1;
                 } else if (cmd[i] != '>' && cmd[i] != ' '){
                         valid_char++;
+                }
+        }
+        
+        for (int j = 0; j < cmd_length; j++) {
+                if (cmd[j] == '|') {
+                        if (j > redirection_position) {
+                                return 2;
+                        }
+                } else if (cmd[j] == '>') {
+                        redirection_position = j;
                 }
         }
         return 0;
@@ -171,10 +182,9 @@ void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_f
         char *cmds[MAX_PIPE];
         int count = 0;
         while (token != NULL) {
-                
                 cmds[count] = token;
                 token = strtok(NULL, "|");
-                count++ ;
+                count++;
         }
         if (CMD->pipe_nums >= count) {
                 fprintf(stderr, "Error: missing command\n");
@@ -311,8 +321,11 @@ int main(void)
                 strcpy(pipeline_cmd, cmd);
                 strcpy(pipeline_cmd_arg2, cmd);
                 int command_flag = commandCheck(cmd);
-                if (command_flag != 0) {
+                if (command_flag == 1) {
                         fprintf(stderr, "Error: missing command\n");
+                        continue;
+                } else if (command_flag == 2) {
+                        fprintf(stderr, "Error: mislocated output redirection\n");
                         continue;
                 }
                 int redirection_flag = redirection_check(cmd);
