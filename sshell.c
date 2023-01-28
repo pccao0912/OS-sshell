@@ -163,7 +163,7 @@ bool pipeline_check(struct CMD *CMD, char *cmd) {
         return Pip_flag;
 }
 
-void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_flag) {
+void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_flag, int bg_flag, int bg_pro, int bg_pid, char *bg_status_list, int bg_pipe_count, int bg_pipe_indicator) {
         // char *redirectionfile_cmd[MAX_PIPE];
         // char cmd_duplicate_output[CMDLINE_MAX];
         // strcpy(cmd_duplicate_output,cmd_duplicate);
@@ -239,17 +239,53 @@ void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_f
                                 close(pipes[j-1][1]);
                         }
                         if(j == count - 1) {
-
+                                if (bg_pro > 0){
+                                        bg_pid = pid;
+                                        strcpy(bg_cmd,cmd_duplicate);
+                                        
+                                }else {
                                 // printf("redirection flag is: %d\n", redirection_flag);
                                 // printf("current cmd is: %s\n", cmd_duplicate);
                                 pid = waitpid(pid, &status, 0);
+                                if (bg_pro > 0){
+                                // printf("bg_pid at main %d",bg_pid);
+                                        int status;
+                                        int bg_result = waitpid(bg_pid,&status, WNOHANG);
+                                // printf("bg_result = %d \n",bg_result);
+                                        if(bg_result > 0){
+                                                if (bg_pipe_indicator != 1){
+                                                        fprintf(stderr, "+ completed '%s' [%d]\n",
+                                                        bg_cmd, WEXITSTATUS(status));
+                                                } else {
+                                                        fprintf(stderr, "+ completed '%s' ",bg_cmd);
+                                                        for (int h = 0; h < bg_pipe_count; h++) {
+                                                                fprintf(stderr, "[%d]", WEXITSTATUS(bg_status_list[h]));
+                                                        }
+                                                        fprintf(stderr,"[%d]",WEXITSTATUS(status));
+                                                        fprintf(stderr, "\n");
+                                                }
+                                                bg_pro = 0 ;
+                                                bg_pid = 0 ;
+                                                bg_pipe_indicator = 0;
+                                        }
+                                }
                                 fprintf(stderr, "+ completed '%s' ", cmd_duplicate);
                                 for (int h = 0; h < count-1; h++) {
-                                         fprintf(stderr, "[%d]", WEXITSTATUS(status_list[h]));
+                                        fprintf(stderr, "[%d]", WEXITSTATUS(status_list[h]));
                                 }
                                 fprintf(stderr,"[%d]",WEXITSTATUS(status));
                                 fprintf(stderr, "\n");
+                                }
+                                
                         } else {
+                                if(bg_flag == 1 ||bg_pro > 0){
+                                        bg_pro += 1;
+                                        bg_pipe_count += 1;
+                                        bg_status_list[j] = WEXITSTATUS(status);
+                                        bg_pipe_indicator = 1;
+                                }
+                                
+
                                 status_list[j] = WEXITSTATUS(status);
                         }
                         // pid = wait(&status);
@@ -281,6 +317,9 @@ int main(void)
         struct CMD CMD;
         int bg_pid = 0;
         int bg_pro = 0;
+        int bg_status_list[MAX_PIPE];
+        int bg_pipe_count = 0;
+        int bg_pipe_indicator = 0;
         int error_flag;
         // since parse would change the cmd, so creating a new string to store the origin version
         while (1) {
@@ -396,11 +435,20 @@ int main(void)
                                                         int bg_result = waitpid(bg_pid,&status, WNOHANG);
                                                 // printf("bg_result = %d \n",bg_result);
                                                         if(bg_result > 0){
-                                                                
-                                                                fprintf(stderr, "+ completed '%s' [%d]\n",
-                                                                bg_cmd, WEXITSTATUS(status));
-                                                                bg_pro -= 1;
+                                                                if (bg_pipe_indicator != 1){
+                                                                        fprintf(stderr, "+ completed '%s' [%d]\n",
+                                                                        bg_cmd, WEXITSTATUS(status));
+                                                                } else {
+                                                                        fprintf(stderr, "+ completed '%s' ",bg_cmd);
+                                                                        for (int h = 0; h < bg_pipe_count; h++) {
+                                                                                fprintf(stderr, "[%d]", WEXITSTATUS(bg_status_list[h]));
+                                                                        }
+                                                                        fprintf(stderr,"[%d]",WEXITSTATUS(status));
+                                                                        fprintf(stderr, "\n");
+                                                                }
+                                                                bg_pro = 0 ;
                                                                 bg_pid = 0 ;
+                                                                bg_pipe_indicator = 0;
                                                         }
                                                 }
                                                 fprintf(stderr, "+ completed '%s' [%d]\n",
