@@ -48,7 +48,12 @@ STDOUT to input filename.
 This is a extra feature Appending, which is simply add some features based on
 the redirection. In the redirection, we use open() function to open the file,
 with O_TRUNC mode. So we add this feature by changing the mode of opening the
-file from O_TRUNC mode to O_APPEND.
+file from O_TRUNC mode to O_APPEND. There's a hard point here is how to handle
+the '>' symbol, and since there's might be error case that there's nothing
+before the symbol, so the way to detect the position of the symbol is quite
+important. Also appending feature increase the difficulty of this, so we handle
+the two '>' symbol by replacing them with white space, so it can perfectly fit
+the parse function.
 
 ### Background
 In this part, a process is needed to be distinguished by the background checker,
