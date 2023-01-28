@@ -32,14 +32,6 @@ int commandCheck(char *cmd) {
         return 0;
 }
 
-void bg_handler() {
-         pid_t pid_child;
-         int status;
-         while ((pid_child = waitpid(-1,&status,WNOHANG))>0){
-                signal(SIGCHLD, SIG_IGN);
-         }
-}
-
 struct CMD parse(struct CMD command, char* cmd) {
         char *token;  // current string/token
         int index = 0;
