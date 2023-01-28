@@ -1,3 +1,3 @@
-# ECS150-Proj1-sshell
+## ECS150-Proj1-sshell
 sshell project
 
