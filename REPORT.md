@@ -48,4 +48,6 @@ brand new parse since the function we write before that unfortunately didn't
 have that function so we come up with a new one, which increase the redundancy.
 For the error management part, we fix and add those function accoring to only
 the instruction, so these part might not cover all corner cases even though we
-created some and tested. 
+created some and tested. We spent a lot of time on doing the background work,
+because the part of combining background work with the piping is quite
+complicated. We finally achive the version of one background process if piping.
