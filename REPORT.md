@@ -29,7 +29,10 @@ STDOUT to input filename.
 
 ## Extra feature
 ### Appending
-This is a extra feature Appending, which is simply add some features based on the redirection. In the redirection, we use open() function to open the file, with O_TRUNC mode. So we add this feature by changing the mode of opening the file from O_TRUNC mode to O_APPEND.
+This is a extra feature Appending, which is simply add some features based on
+the redirection. In the redirection, we use open() function to open the file,
+with O_TRUNC mode. So we add this feature by changing the mode of opening the
+file from O_TRUNC mode to O_APPEND.
 
 ### Background
 
