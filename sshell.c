@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -18,24 +19,14 @@ struct CMD {
 };
 
 int commandCheck(char *cmd) {
+        // Check if there's no command before the > symbol
         int cmd_length = strlen(cmd);
         int valid_char = 0;
-        int redirection_position = 0;
         for (int i = 0; i < cmd_length; i++) {
                 if(valid_char == 0 && cmd[i] == '>') {
                         return 1;
                 } else if (cmd[i] != '>' && cmd[i] != ' '){
                         valid_char++;
-                }
-        }
-        
-        for (int j = 0; j < cmd_length; j++) {
-                if (cmd[j] == '|') {
-                        if (j > redirection_position) {
-                                return 2;
-                        }
-                } else if (cmd[j] == '>') {
-                        redirection_position = j;
                 }
         }
         return 0;
@@ -151,7 +142,6 @@ int redirection(char* cmd) {
                 fd = open(directory, O_CREAT | O_WRONLY | O_TRUNC, 0600);
         }
         if (fd < 0) {
-                perror("open");
                 fprintf(stderr, "Error: cannot open output file\n");
                 return 1;
         }
@@ -182,9 +172,10 @@ void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_f
         char *cmds[MAX_PIPE];
         int count = 0;
         while (token != NULL) {
+                
                 cmds[count] = token;
                 token = strtok(NULL, "|");
-                count++;
+                count++ ;
         }
         if (CMD->pipe_nums >= count) {
                 fprintf(stderr, "Error: missing command\n");
@@ -324,7 +315,8 @@ int main(void)
                 if (command_flag == 1) {
                         fprintf(stderr, "Error: missing command\n");
                         continue;
-                } else if (command_flag == 2) {
+                }
+                if (strstr(cmd, ">") < strstr(cmd, "|") && strstr(cmd, ">") != NULL) {
                         fprintf(stderr, "Error: mislocated output redirection\n");
                         continue;
                 }
@@ -350,7 +342,7 @@ int main(void)
                         } else if (!strcmp(CMD.args[0], "cd")) {
                                 int ret = chdir(CMD.args[1]);
                                 if (ret != 0) {
-                                        fprintf(stderr, "Error: cannot cd into directory");
+                                        fprintf(stderr, "Error: cannot cd into directory\n");
                                         fprintf(stderr, "+ completed '%s' [%d]\n",
                                         Prev_cmd, WEXITSTATUS(ret));
                                         continue;
@@ -379,7 +371,10 @@ int main(void)
                                                 }
                                         }
                                         execvp(CMD.args[0],CMD.args);
-                                        perror("execvp");
+                                        if (errno = ENOENT) {
+                                                fprintf(stderr, "Error: command not found\n");
+                                                continue;
+                                        }
                                         exit(1);
                                 }
                                 if (pid > 0) {
