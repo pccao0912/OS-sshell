@@ -163,7 +163,7 @@ bool pipeline_check(struct CMD *CMD, char *cmd) {
         return Pip_flag;
 }
 
-void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_flag,char* bg_cmd, int bg_flag, int bg_pro, int bg_pid, char *bg_status_list, int bg_pipe_count, int bg_pipe_indicator) {
+void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_flag,char* bg_cmd, int bg_flag, int bg_pro, int bg_pid, int *bg_status_list, int bg_pipe_count, int bg_pipe_indicator) {
         // char *redirectionfile_cmd[MAX_PIPE];
         // char cmd_duplicate_output[CMDLINE_MAX];
         // strcpy(cmd_duplicate_output,cmd_duplicate);
