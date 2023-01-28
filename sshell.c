@@ -364,7 +364,7 @@ int main(void)
                 int bg_flag = background_check(cmd);
                 if(pipline_flag == 1) {
                         // pipeline instruction
-                        pipeline(&CMD, cmd, pipeline_cmd_arg2, redirection_flag);
+                        pipeline(&CMD, cmd, pipeline_cmd_arg2, redirection_flag, bg_cmd, bg_flag, bg_pro, bg_pid, bg_status_list, bg_pipe_count, bg_pipe_indicator);
                 } else  {
                         // execution without piping
                         struct CMD CMD = parse(CMD, cmd);
