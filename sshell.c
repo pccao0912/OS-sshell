@@ -13,6 +13,8 @@
 
 struct CMD {
         char *args[ARGS_MAX];
+        int arg_nums;
+        int pipe_nums;
 };
 
 
@@ -34,11 +36,13 @@ struct CMD parse(struct CMD command, char* cmd) {
         char *token;  // current string/token
         int index = 0;
         token = strtok(cmd, " ");
+        command.arg_nums = 0;
         while (token != NULL) {
                 // method to keep reading words from a string from https://www.runoob.com/cprogramming/c-function-strtok.html
                 command.args[index] = token;
                 token = strtok(NULL, " ");
                 index++;
+                command.arg_nums = index;
         }
         command.args[index] = NULL;
         return command;
@@ -66,7 +70,7 @@ int redirection_check(char* cmd) {
 }
 
 
-void redirection(char* cmd) {
+int redirection(char* cmd) {
         int cmd_length = strlen(cmd);
         int start = 0;
         int end = 0;
@@ -107,6 +111,11 @@ void redirection(char* cmd) {
         }
         // end the string
         directory[dir_len] = '\0';
+
+        if (dir_len == 1 && directory[0] == '>') {
+                fprintf(stderr, "Error: no output file\n");
+                return 1;
+        }
         // printf("text is: %s\n", directory);
         // printf("text length is: %d\n", dir_len);
 
@@ -120,24 +129,28 @@ void redirection(char* cmd) {
         }
         if (fd < 0) {
                 perror("open");
-                exit(EXIT_FAILURE);
+                fprintf(stderr, "Error: cannot open output file\n");
+                return 1;
         }
         dup2(fd, STDOUT_FILENO);
         close(fd);
+        return 0;
 }
 
-bool pipeline_check(char *cmd) {
+bool pipeline_check(struct CMD *CMD, char *cmd) {
         int Pip_flag = 0;
         int cmd_length = strlen(cmd);
+        CMD->pipe_nums = 0;
         for (int i = 0; i <= cmd_length; i++) {
                 if(cmd[i] == '|') {
                         Pip_flag = 1;
+                        CMD->pipe_nums++;
                 }
         }
         return Pip_flag;
 }
 
-void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
+void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_flag) {
         // char *redirectionfile_cmd[MAX_PIPE];
         // char cmd_duplicate_output[CMDLINE_MAX];
         // strcpy(cmd_duplicate_output,cmd_duplicate);
@@ -150,6 +163,10 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
                 cmds[count] = token;
                 token = strtok(NULL, "|");
                 count++ ;
+        }
+        if (CMD->pipe_nums >= count) {
+                fprintf(stderr, "Error: missing command\n");
+                return;
         }
         int pipes[count][2];
         int status_list[count+1];
@@ -164,7 +181,7 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
                 while (separate_arg != NULL) {
                         args[arg_count] = separate_arg;
                         //printf("%s\n",args[arg_count]);
-                        arg_count ++ ;
+                        arg_count++;
                         separate_arg = strtok(NULL, " ");
                 }
                 args[arg_count] = NULL;
@@ -184,6 +201,7 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
                         }
                         if (redirection_flag != 0 && j == count -1) {
                                 char cmd_for_redirect[CMDLINE_MAX];
+                                int error_flag;
                                 strcpy(cmd_for_redirect,cmd_duplicate);
                                 printf("%s\n",cmd_for_redirect);
                                 char *token_redirect = strtok(cmd_for_redirect, "|");
@@ -195,7 +213,10 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
                                         token_redirect = strtok(NULL, "|");
                                         count_redirect++ ;
                                 }
-                                redirection(cmds_redirect[count_redirect-1]);
+                                error_flag = redirection(cmds_redirect[count_redirect-1]);
+                                if (error_flag != 0) {
+                                        exit(1);
+                                }
                         }
                         execvp(args[0],args);
                 } else if (pid > 0) {
@@ -244,8 +265,10 @@ int main(void)
         char pipeline_cmd_arg2[CMDLINE_MAX];
         char Prev_cmd[CMDLINE_MAX];
         char bg_cmd[CMDLINE_MAX];
+        struct CMD CMD;
         int bg_pid = 0;
         int bg_pro = 0;
+        int error_flag;
         // since parse would change the cmd, so creating a new string to store the origin version
         while (1) {
                 
@@ -276,14 +299,18 @@ int main(void)
                 strcpy(pipeline_cmd, cmd);
                 strcpy(pipeline_cmd_arg2, cmd);   
                 int redirection_flag = redirection_check(cmd);
-                int pipline_flag = pipeline_check(cmd);
+                int pipline_flag = pipeline_check(&CMD, cmd);
                 int bg_flag = background_check(cmd);
                 if(pipline_flag == 1) {
                         // pipeline instruction
-                        pipeline(cmd, pipeline_cmd_arg2, redirection_flag);
+                        pipeline(&CMD, cmd, pipeline_cmd_arg2, redirection_flag);
                 } else  {
                         // execution without piping
                         struct CMD CMD = parse(CMD, cmd);
+                                if (CMD.arg_nums >= ARGS_MAX) {
+                                        fprintf(stderr, "Error: too many process arguments\n");
+                                        continue;
+                                }
                                 /* Builtin command */
                                 if (!strcmp(CMD.args[0], "exit")) {
                                         fprintf(stderr, "Bye...\n");
@@ -316,7 +343,10 @@ int main(void)
                                         //char *args[] = {cmd,"-u",NULL};
                                         if (pid == 0) {
                                                 if (redirection_flag != 0) {
-                                                        redirection(Prev_cmd);
+                                                        error_flag = redirection(Prev_cmd);
+                                                        if (error_flag != 0) {
+                                                                continue;
+                                                        }
                                                 }
                                                 execvp(CMD.args[0],CMD.args);
                                                 perror("execvp");
