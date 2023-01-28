@@ -12,7 +12,9 @@ array to store. Also, in the struct, there are several flags for error checking.
 ## Execution without piping
 After getting the parsed string array, next thing we did is to extract the
 command we want, and pass it to executing along with the rest arguments in the
-same struct.
+same struct. And the excution process is simply doing a parent and a child.
+After the execution of current command it would then print prompt and get int a
+new round.
 
 ## Execution with piping
 A different parse method is needed for the piping since we introduce a new
