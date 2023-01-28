@@ -1,8 +1,9 @@
 # ECS150-Proj1-sshell
 sshell project
 
-## Parse
+## Introduction
 
+## Parse
 The first part we did is the Parsing secion. We write that function for case of
 none piping parsing. The thing we did in the Parse() function is use strtok() to
 divide those words for the case there's only one command. So by using strtok(),
@@ -48,3 +49,4 @@ file from O_TRUNC mode to O_APPEND.
 
 ### Background
 
+## Summray
