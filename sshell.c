@@ -307,83 +307,83 @@ int main(void)
                 } else  {
                         // execution without piping
                         struct CMD CMD = parse(CMD, cmd);
-                                if (CMD.arg_nums >= ARGS_MAX) {
-                                        fprintf(stderr, "Error: too many process arguments\n");
-                                        continue;
-                                }
-                                /* Builtin command */
-                                if (!strcmp(CMD.args[0], "exit")) {
-                                        fprintf(stderr, "Bye...\n");
-                                        fprintf(stderr, "+ completed '%s' [%d]\n",
-                                                Prev_cmd, 0);
-                                        exit(0);
-                                } else if (!strcmp(CMD.args[0], "cd")) {
-                                        int ret = chdir(CMD.args[1]);
-                                        if (ret != 0) {
-                                                fprintf(stderr, "Error: cannot cd into directory");
-                                                fprintf(stderr, "+ completed '%s' [%d]\n",
-                                                Prev_cmd, WEXITSTATUS(ret));
-                                                continue;
-                                        }
+                        if (CMD.arg_nums >= ARGS_MAX) {
+                                fprintf(stderr, "Error: too many process arguments\n");
+                                continue;
+                        }
+                        /* Builtin command */
+                        if (!strcmp(CMD.args[0], "exit")) {
+                                fprintf(stderr, "Bye...\n");
+                                fprintf(stderr, "+ completed '%s' [%d]\n",
+                                        Prev_cmd, 0);
+                                exit(0);
+                        } else if (!strcmp(CMD.args[0], "cd")) {
+                                int ret = chdir(CMD.args[1]);
+                                if (ret != 0) {
+                                        fprintf(stderr, "Error: cannot cd into directory");
                                         fprintf(stderr, "+ completed '%s' [%d]\n",
                                         Prev_cmd, WEXITSTATUS(ret));
-                                } else if (!strcmp(CMD.args[0], "pwd")) {
-                                        char* cur_path = NULL;
-                                        cur_path = getcwd(cur_path, 0);
-                                        fprintf(stdout, "%s\n", cur_path);
-                                        fprintf(stderr, "+ completed '%s' [%d]\n",
-                                        Prev_cmd, 0);
-                                } else {
-                                        /* Regular command */
-                                        // retval = system(cmd);
-                                        // fprintf(stdout, "Return status value for '%s': %d\n",
-                                        //         cmd, retval);
-                                        pid_t pid = fork();
-                                        int status;
-                                        //char *args[] = {cmd,"-u",NULL};
-                                        if (pid == 0) {
-                                                if (redirection_flag != 0) {
-                                                        error_flag = redirection(Prev_cmd);
-                                                        if (error_flag != 0) {
-                                                                continue;
+                                        continue;
+                                }
+                                fprintf(stderr, "+ completed '%s' [%d]\n",
+                                Prev_cmd, WEXITSTATUS(ret));
+                        } else if (!strcmp(CMD.args[0], "pwd")) {
+                                char* cur_path = NULL;
+                                cur_path = getcwd(cur_path, 0);
+                                fprintf(stdout, "%s\n", cur_path);
+                                fprintf(stderr, "+ completed '%s' [%d]\n",
+                                Prev_cmd, 0);
+                        } else {
+                                /* Regular command */
+                                // retval = system(cmd);
+                                // fprintf(stdout, "Return status value for '%s': %d\n",
+                                //         cmd, retval);
+                                pid_t pid = fork();
+                                int status;
+                                //char *args[] = {cmd,"-u",NULL};
+                                if (pid == 0) {
+                                        if (redirection_flag != 0) {
+                                                error_flag = redirection(Prev_cmd);
+                                                if (error_flag != 0) {
+                                                        continue;
+                                                }
+                                        }
+                                        execvp(CMD.args[0],CMD.args);
+                                        perror("execvp");
+                                        exit(1);
+                                }
+                                if (pid > 0) {
+                                        
+                                        // int bg_result;
+                                        //fprintf(stderr,"bg_flag :%d\n",bg_flag);
+                                        if (bg_flag == 1){
+                                                // printf("ruuning in the background %d\n",pid);
+                                                bg_pid = pid;
+                                                bg_pro += 1;
+                                                strcpy(bg_cmd,Prev_cmd);
+                                                // printf("bg_pid == %d\n",bg_pid);
+                                                
+                                        } else {
+                                                pid = waitpid(pid, &status, 0);
+                                                if (bg_pro > 0){
+                                                // printf("bg_pid at main %d",bg_pid);
+                                                        int status;
+                                                        int bg_result = waitpid(bg_pid,&status, WNOHANG);
+                                                // printf("bg_result = %d \n",bg_result);
+                                                        if(bg_result > 0){
+                                                                
+                                                                fprintf(stderr, "+ completed '%s' [%d]\n",
+                                                                bg_cmd, WEXITSTATUS(status));
+                                                                bg_pro -= 1;
+                                                                bg_pid = 0 ;
                                                         }
                                                 }
-                                                execvp(CMD.args[0],CMD.args);
-                                                perror("execvp");
-                                                exit(1);
-                                        }
-                                        if (pid > 0) {
-                                                
-                                                // int bg_result;
-                                                //fprintf(stderr,"bg_flag :%d\n",bg_flag);
-                                                if (bg_flag == 1){
-                                                       // printf("ruuning in the background %d\n",pid);
-                                                        bg_pid = pid;
-                                                        bg_pro += 1;
-                                                        strcpy(bg_cmd,Prev_cmd);
-                                                       // printf("bg_pid == %d\n",bg_pid);
-                                                        
-                                                } else {
-                                                        pid = waitpid(pid, &status, 0);
-                                                        if (bg_pro > 0){
-                                                        // printf("bg_pid at main %d",bg_pid);
-                                                                int status;
-                                                                int bg_result = waitpid(bg_pid,&status, WNOHANG);
-                                                        // printf("bg_result = %d \n",bg_result);
-                                                                if(bg_result > 0){
-                                                                        
-                                                                        fprintf(stderr, "+ completed '%s' [%d]\n",
-                                                                        bg_cmd, WEXITSTATUS(status));
-                                                                        bg_pro -= 1;
-                                                                        bg_pid = 0 ;
-                                                                }
-                                                        }
-                                                        fprintf(stderr, "+ completed '%s' [%d]\n",
-                                                        Prev_cmd, WEXITSTATUS(status));
-                                                } 
+                                                fprintf(stderr, "+ completed '%s' [%d]\n",
+                                                Prev_cmd, WEXITSTATUS(status));
+                                        } 
 
-                                        }
                                 }
+                        }
                 }
         }
         return EXIT_SUCCESS;
