@@ -98,8 +98,6 @@ int redirection(char* cmd) {
                 }
         }
 
-        // printf("start is: %d\n", start);
-
         for (int j = start; j < cmd_length; j++) {
                 if (cmd[j] == ' ') {
                         end = j - 1;
@@ -107,8 +105,6 @@ int redirection(char* cmd) {
                 }
                 end = j;
         }
-
-        // printf("end is: %d\n", end);
 
         // creat a string according to the length(end - start)
         int dir_len = end - start + 1;
@@ -181,7 +177,6 @@ int main(void)
         while (1) {
                 
                 char *nl;
-                //int retval;
 
                 /* Print prompt */
                 printf("sshell@ucd$ ");
@@ -221,7 +216,6 @@ int main(void)
                 if(pipline_flag == 1) {
                         // pipeline instruction
                         char *token = strtok(cmd, "|");
-                        // char *token_redirection = strtok(cmd_duplicate_output,"|");
                         char *cmds[MAX_PIPE];
                         int count = 0;
                         while (token != NULL) {
@@ -246,7 +240,6 @@ int main(void)
                                 char *separate_arg = strtok(cmds[j]," ");
                                 while (separate_arg != NULL) {
                                         args[arg_count] = separate_arg;
-                                        //printf("%s\n",args[arg_count]);
                                         arg_count++;
                                         separate_arg = strtok(NULL, " ");
                                 }
@@ -299,14 +292,10 @@ int main(void)
                                                 strcpy(bg_cmd,pipeline_cmd_arg2);
                                                 
                                         } else {
-                                        // printf("redirection flag is: %d\n", redirection_flag);
-                                        // printf("current cmd is: %s\n", pipeline_cmd_arg2);
                                                 pid = waitpid(pid, &status, 0);
                                                 if (bg_pro > 0){
-                                        // printf("bg_pid at main %d",bg_pid);
                                                         int status;
                                                         int bg_result = waitpid(bg_pid,&status, WNOHANG);
-                                                // printf("bg_result = %d \n",bg_result);
                                                         if(bg_result > 0){
                                                                 if (bg_pipe_indicator != 1){
                                                                         fprintf(stderr, "+ completed '%s' [%d]\n",
@@ -374,12 +363,8 @@ int main(void)
                                 Prev_cmd, 0);
                         } else {
                                 /* Regular command */
-                                // retval = system(cmd);
-                                // fprintf(stdout, "Return status value for '%s': %d\n",
-                                //         cmd, retval);
                                 pid_t pid = fork();
                                 int status;
-                                //char *args[] = {cmd,"-u",NULL};
                                 if (pid == 0) {
                                         if (redirection_flag != 0) {
                                                 error_flag = redirection(Prev_cmd);
@@ -397,22 +382,15 @@ int main(void)
                                         exit(1);
                                 }
                                 if (pid > 0) {
-                                        // int bg_result;
-                                        //fprintf(stderr,"bg_flag :%d\n",bg_flag);
                                         if (bg_flag == 1){
-                                                // printf("ruuning in the background %d\n",pid);
                                                 bg_pid = pid;
                                                 bg_pro += 1;
                                                 strcpy(bg_cmd,Prev_cmd);
-                                                // printf("bg_pid == %d\n",bg_pid);
-                                                
                                         } else {
                                                 pid = waitpid(pid, &status, 0);
                                                 if (bg_pro > 0){
-                                                // printf("bg_pid at main %d",bg_pid);
                                                         int status;
                                                         int bg_result = waitpid(bg_pid,&status, WNOHANG);
-                                                // printf("bg_result = %d \n",bg_result);
                                                         if(bg_result > 0){
                                                                 if (bg_pipe_indicator != 1){
                                                                         fprintf(stderr, "+ completed '%s' [%d]\n",
