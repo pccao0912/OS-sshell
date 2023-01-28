@@ -163,137 +163,6 @@ bool pipeline_check(struct CMD *CMD, char *cmd) {
         return Pip_flag;
 }
 
-void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_flag,char* bg_cmd, int bg_flag, int bg_pro, int bg_pid, int *bg_status_list, int bg_pipe_count, int bg_pipe_indicator) {
-        // char *redirectionfile_cmd[MAX_PIPE];
-        // char cmd_duplicate_output[CMDLINE_MAX];
-        // strcpy(cmd_duplicate_output,cmd_duplicate);
-        char *token = strtok(cmd, "|");
-        // char *token_redirection = strtok(cmd_duplicate_output,"|");
-        char *cmds[MAX_PIPE];
-        int count = 0;
-        while (token != NULL) {
-                
-                cmds[count] = token;
-                token = strtok(NULL, "|");
-                count++ ;
-        }
-        if (CMD->pipe_nums >= count) {
-                fprintf(stderr, "Error: missing command\n");
-                return;
-        }
-        int pipes[count][2];
-        int status_list[count+1];
-        for (int j = 0; j < count; j++) {
-                pipe(pipes[j]);
-        }
-
-        for (int j = 0; j < count; j++) {
-                char *args[ARGS_MAX];
-                int arg_count = 0;
-                char *separate_arg = strtok(cmds[j]," ");
-                while (separate_arg != NULL) {
-                        args[arg_count] = separate_arg;
-                        //printf("%s\n",args[arg_count]);
-                        arg_count++;
-                        separate_arg = strtok(NULL, " ");
-                }
-                args[arg_count] = NULL;
-                int status;
-                pid_t pid = fork();
-                if (pid == 0) {
-                        //children
-                        if (j > 0) {
-                                close(pipes[j-1][1]);
-                                dup2(pipes[j-1][0], STDIN_FILENO);
-                                close(pipes[j-1][0]);
-                        }
-                        if (j < count - 1) {
-                                close(pipes[j][0]);
-                                dup2(pipes[j][1], STDOUT_FILENO);
-                                close(pipes[j][1]);
-                        }
-                        if (redirection_flag != 0 && j == count -1) {
-                                char cmd_for_redirect[CMDLINE_MAX];
-                                int error_flag;
-                                strcpy(cmd_for_redirect,cmd_duplicate);
-                                printf("%s\n",cmd_for_redirect);
-                                char *token_redirect = strtok(cmd_for_redirect, "|");
-                                char *cmds_redirect[MAX_PIPE];
-                                int count_redirect = 0;
-                                while (token_redirect != NULL) {
-                                        
-                                        cmds_redirect[count_redirect] = token_redirect;
-                                        token_redirect = strtok(NULL, "|");
-                                        count_redirect++ ;
-                                }
-                                error_flag = redirection(cmds_redirect[count_redirect-1]);
-                                if (error_flag != 0) {
-                                        exit(1);
-                                }
-                        }
-                        execvp(args[0],args);
-                } else if (pid > 0) {
-                        //parent
-                        if (j > 0) {
-                                close(pipes[j-1][0]);
-                                close(pipes[j-1][1]);
-                        }
-                        if(j == count - 1) {
-                                if (bg_pro > 0){
-                                        bg_pid = pid;
-                                        strcpy(bg_cmd,cmd_duplicate);
-                                        
-                                }else {
-                                // printf("redirection flag is: %d\n", redirection_flag);
-                                // printf("current cmd is: %s\n", cmd_duplicate);
-                                pid = waitpid(pid, &status, 0);
-                                if (bg_pro > 0){
-                                // printf("bg_pid at main %d",bg_pid);
-                                        int status;
-                                        int bg_result = waitpid(bg_pid,&status, WNOHANG);
-                                // printf("bg_result = %d \n",bg_result);
-                                        if(bg_result > 0){
-                                                if (bg_pipe_indicator != 1){
-                                                        fprintf(stderr, "+ completed '%s' [%d]\n",
-                                                        bg_cmd, WEXITSTATUS(status));
-                                                } else {
-                                                        fprintf(stderr, "+ completed '%s' ",bg_cmd);
-                                                        for (int h = 0; h < bg_pipe_count; h++) {
-                                                                fprintf(stderr, "[%d]", WEXITSTATUS(bg_status_list[h]));
-                                                        }
-                                                        fprintf(stderr,"[%d]",WEXITSTATUS(status));
-                                                        fprintf(stderr, "\n");
-                                                }
-                                                bg_pro = 0 ;
-                                                bg_pid = 0 ;
-                                                bg_pipe_indicator = 0;
-                                        }
-                                }
-                                fprintf(stderr, "+ completed '%s' ", cmd_duplicate);
-                                for (int h = 0; h < count-1; h++) {
-                                        fprintf(stderr, "[%d]", WEXITSTATUS(status_list[h]));
-                                }
-                                fprintf(stderr,"[%d]",WEXITSTATUS(status));
-                                fprintf(stderr, "\n");
-                                }
-                                
-                        } else {
-                                if(bg_flag == 1 ||bg_pro > 0){
-                                        bg_pro += 1;
-                                        bg_pipe_count += 1;
-                                        bg_status_list[j] = WEXITSTATUS(status);
-                                        bg_pipe_indicator = 1;
-                                }
-                                
-
-                                status_list[j] = WEXITSTATUS(status);
-                        }
-                        // pid = wait(&status);
-                }
-
-        }    
-}
-
 bool background_check(char *cmd) {
         int bg_flag = 0;
         int cmd_length = strlen(cmd);
@@ -364,7 +233,129 @@ int main(void)
                 int bg_flag = background_check(cmd);
                 if(pipline_flag == 1) {
                         // pipeline instruction
-                        pipeline(&CMD, cmd, pipeline_cmd_arg2, redirection_flag, bg_cmd, bg_flag, bg_pro, bg_pid, bg_status_list, bg_pipe_count, bg_pipe_indicator);
+                        char *token = strtok(cmd, "|");
+                        // char *token_redirection = strtok(cmd_duplicate_output,"|");
+                        char *cmds[MAX_PIPE];
+                        int count = 0;
+                        while (token != NULL) {
+                                
+                                cmds[count] = token;
+                                token = strtok(NULL, "|");
+                                count++ ;
+                        }
+                        if (CMD.pipe_nums >= count) {
+                                fprintf(stderr, "Error: missing command\n");
+                                continue;;
+                        }
+                        int pipes[count][2];
+                        int status_list[count+1];
+                        for (int j = 0; j < count; j++) {
+                                pipe(pipes[j]);
+                        }
+
+                        for (int j = 0; j < count; j++) {
+                                char *args[ARGS_MAX];
+                                int arg_count = 0;
+                                char *separate_arg = strtok(cmds[j]," ");
+                                while (separate_arg != NULL) {
+                                        args[arg_count] = separate_arg;
+                                        //printf("%s\n",args[arg_count]);
+                                        arg_count++;
+                                        separate_arg = strtok(NULL, " ");
+                                }
+                                args[arg_count] = NULL;
+                                int status;
+                                pid_t pid = fork();
+                                if (pid == 0) {
+                                        //children
+                                        if (j > 0) {
+                                                close(pipes[j-1][1]);
+                                                dup2(pipes[j-1][0], STDIN_FILENO);
+                                                close(pipes[j-1][0]);
+                                        }
+                                        if (j < count - 1) {
+                                                close(pipes[j][0]);
+                                                dup2(pipes[j][1], STDOUT_FILENO);
+                                                close(pipes[j][1]);
+                                        }
+                                        if (redirection_flag != 0 && j == count -1) {
+                                                char cmd_for_redirect[CMDLINE_MAX];
+                                                int error_flag;
+                                                strcpy(cmd_for_redirect,pipeline_cmd_arg2);
+                                                printf("%s\n",cmd_for_redirect);
+                                                char *token_redirect = strtok(cmd_for_redirect, "|");
+                                                char *cmds_redirect[MAX_PIPE];
+                                                int count_redirect = 0;
+                                                while (token_redirect != NULL) {
+                                                        
+                                                        cmds_redirect[count_redirect] = token_redirect;
+                                                        token_redirect = strtok(NULL, "|");
+                                                        count_redirect++ ;
+                                                }
+                                                error_flag = redirection(cmds_redirect[count_redirect-1]);
+                                                if (error_flag != 0) {
+                                                        exit(1);
+                                                }
+                                        }
+                                        execvp(args[0],args);
+                                } else if (pid > 0) {
+                                        //parent
+                                if (j > 0) {
+                                        close(pipes[j-1][0]);
+                                        close(pipes[j-1][1]);
+                                }
+                                if(j == count - 1) {
+                                        if (bg_pro > 0){
+                                                bg_pid = pid;
+                                                printf("ruuning in the background %d\n",bg_pid);
+                                                
+                                                strcpy(bg_cmd,pipeline_cmd_arg2);
+                                                
+                                        } else {
+                                        // printf("redirection flag is: %d\n", redirection_flag);
+                                        // printf("current cmd is: %s\n", pipeline_cmd_arg2);
+                                                pid = waitpid(pid, &status, 0);
+                                                if (bg_pro > 0){
+                                        // printf("bg_pid at main %d",bg_pid);
+                                                        int status;
+                                                        int bg_result = waitpid(bg_pid,&status, WNOHANG);
+                                                // printf("bg_result = %d \n",bg_result);
+                                                        if(bg_result > 0){
+                                                                if (bg_pipe_indicator != 1){
+                                                                        fprintf(stderr, "+ completed '%s' [%d]\n",
+                                                                        bg_cmd, WEXITSTATUS(status));
+                                                                } else {
+                                                                        fprintf(stderr, "+ completed '%s' ",bg_cmd);
+                                                                        for (int h = 0; h < bg_pipe_count; h++) {
+                                                                                fprintf(stderr, "[%d]", WEXITSTATUS(bg_status_list[h]));
+                                                                        }
+                                                                        fprintf(stderr,"[%d]",WEXITSTATUS(status));
+                                                                        fprintf(stderr, "\n");
+                                                                }
+                                                                bg_pro = 0 ;
+                                                                bg_pid = 0 ;
+                                                                bg_pipe_indicator = 0;
+                                                        }
+                                                }
+                                                fprintf(stderr, "+ completed '%s' ", pipeline_cmd_arg2);
+                                                for (int h = 0; h < count-1; h++) {
+                                                        fprintf(stderr, "[%d]", WEXITSTATUS(status_list[h]));
+                                                }
+                                                fprintf(stderr,"[%d]",WEXITSTATUS(status));
+                                                fprintf(stderr, "\n");
+                                        }
+                                        
+                                } else {
+                                        if(bg_flag == 1 ||bg_pro > 0){
+                                                bg_pro += 1;
+                                                bg_pipe_count += 1;
+                                                bg_status_list[j] = WEXITSTATUS(status);
+                                                bg_pipe_indicator = 1;
+                                        }
+                                        status_list[j] = WEXITSTATUS(status);
+                                }
+                            }
+                        }    
                 } else  {
                         // execution without piping
                         struct CMD CMD = parse(CMD, cmd);
@@ -417,7 +408,7 @@ int main(void)
                                         exit(1);
                                 }
                                 if (pid > 0) {
-                                        
+                                       
                                         // int bg_result;
                                         //fprintf(stderr,"bg_flag :%d\n",bg_flag);
                                         if (bg_flag == 1){
