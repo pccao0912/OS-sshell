@@ -38,12 +38,6 @@ void bg_handler() {
          while ((pid_child = waitpid(-1,&status,WNOHANG))>0){
                 signal(SIGCHLD, SIG_IGN);
          }
-        //  while (()>0) {
-        //         
-        //         printf("within handler while loop\n");
-        // //         fprintf(stderr, "+ completed [%d] \n",
-        // //          WEXITSTATUS(status));
-        // }
 }
 
 struct CMD parse(struct CMD command, char* cmd) {
@@ -130,12 +124,6 @@ int redirection(char* cmd) {
                 fprintf(stderr, "Error: no output file\n");
                 return 1;
         }
-        // printf("text is: %s\n", directory);
-        // printf("text length is: %d\n", dir_len);
-
-        // find the path or place that we want to use for fd
-        // printf("Directory is %s\n", directory);
-        // printf("Append flag is: %d\n", append_flag);
         if (append_flag == 1) {
                 fd = open(directory, O_CREAT | O_WRONLY | O_APPEND, 0600);
         } else {
@@ -177,7 +165,6 @@ bool background_check(char *cmd) {
 
 int main(void)
 {
-        
         char cmd[CMDLINE_MAX];
         char pipeline_cmd[CMDLINE_MAX];
         char pipeline_cmd_arg2[CMDLINE_MAX];
