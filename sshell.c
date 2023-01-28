@@ -224,73 +224,6 @@ void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
         }    
 }
 
-void execution(char Prev_cmd[], char cmd[], int redirection_flag, int bg_flag) {
-        struct CMD CMD = parse(CMD, cmd);
-        /* Builtin command */
-        if (!strcmp(CMD.args[0], "exit")) {
-                fprintf(stderr, "Bye...\n");
-                fprintf(stderr, "+ completed '%s' [%d]\n",
-                        Prev_cmd, 0);
-                exit(0);
-        } else if (!strcmp(CMD.args[0], "cd")) {
-                int ret = chdir(CMD.args[1]);
-                if (ret != 0) {
-                        fprintf(stderr, "Error: cannot cd into directory");
-                        fprintf(stderr, "+ completed '%s' [%d]\n",
-                        Prev_cmd, WEXITSTATUS(ret));
-                        return;
-                }
-                fprintf(stderr, "+ completed '%s' [%d]\n",
-                Prev_cmd, WEXITSTATUS(ret));
-        } else if (!strcmp(CMD.args[0], "pwd")) {
-                char* cur_path = NULL;
-                cur_path = getcwd(cur_path, 0);
-                fprintf(stdout, "%s\n", cur_path);
-                fprintf(stderr, "+ completed '%s' [%d]\n",
-                Prev_cmd, 0);
-        } else {
-                /* Regular command */
-                // retval = system(cmd);
-                // fprintf(stdout, "Return status value for '%s': %d\n",
-                //         cmd, retval);
-                pid_t pid = fork();
-                //char *args[] = {cmd,"-u",NULL};
-                if (pid == 0) {
-                        if (redirection_flag != 0) {
-                                redirection(Prev_cmd);
-                        }
-                        execvp(CMD.args[0],CMD.args);
-                        perror("execvp");
-                        exit(1);
-                }
-                if (pid > 0) {
-                        int status;
-                        // int bg_result;
-                        //fprintf(stderr,"bg_flag :%d\n",bg_flag);
-                        if (bg_flag == 1){
-                                printf("ruuning in the background %d\n",pid);
-                                // bg_result = waitpid(pid,&status,WNOHANG);
-                                // if(bg_result == pid){
-                                //         fprintf(stderr, "+ completeddddd '%s' [%d] \n",
-                                //         Prev_cmd, WEXITSTATUS(status));      
-                                // }
-                                struct sigaction sa;
-                                sigfillset(&sa.sa_mask);
-                                sa.sa_handler = bg_handler;
-                                sa.sa_flags = 0;
-                                sigaction(SIGCHLD, &sa, NULL);
-     
-                        } else {
-                                pid = waitpid(pid, &status, 0);
-                                fprintf(stderr, "+ completedd '%s' [%d] \n",
-                                Prev_cmd, WEXITSTATUS(status));
-                        } 
-
-                }
-        }
-}
-
-
 bool background_check(char *cmd) {
         int bg_flag = 0;
         int cmd_length = strlen(cmd);
@@ -320,7 +253,7 @@ int main(void)
                 //int retval;
 
                 /* Print prompt */
-                printf("sshell$ ");
+                printf("sshell@ucd$ ");
                 fflush(stdout);
 
                 /* Get command line */
@@ -328,18 +261,7 @@ int main(void)
                 if(!(strcmp(cmd,"\n"))) {
                         continue;
                 }
-                if (bg_pro > 0){
-                       // printf("bg_pid at main %d",bg_pid);
-                        int status;
-                        int bg_result = waitpid(bg_pid,&status, WNOHANG);
-                       // printf("bg_result = %d \n",bg_result);
-                        if(bg_result > 0){
-                                fprintf(stderr, "+ completed '%s' [%d] \n",
-                                bg_cmd, WEXITSTATUS(status));
-                                bg_pro -= 1;
-                                bg_pid = 0 ;
-                        }
-                }
+
                 /* Print command line if stdin is not provided by terminal */
                 if (!isatty(STDIN_FILENO)) {
                         printf("%s", cmd);
@@ -413,7 +335,20 @@ int main(void)
                                                         
                                                 } else {
                                                         pid = waitpid(pid, &status, 0);
-                                                        fprintf(stderr, "+ completed '%s' [%d] \n",
+                                                        if (bg_pro > 0){
+                                                        // printf("bg_pid at main %d",bg_pid);
+                                                                int status;
+                                                                int bg_result = waitpid(bg_pid,&status, WNOHANG);
+                                                        // printf("bg_result = %d \n",bg_result);
+                                                                if(bg_result > 0){
+                                                                        
+                                                                        fprintf(stderr, "+ completed '%s' [%d]\n",
+                                                                        bg_cmd, WEXITSTATUS(status));
+                                                                        bg_pro -= 1;
+                                                                        bg_pid = 0 ;
+                                                                }
+                                                        }
+                                                        fprintf(stderr, "+ completed '%s' [%d]\n",
                                                         Prev_cmd, WEXITSTATUS(status));
                                                 } 
 
