@@ -49,7 +49,9 @@ with O_TRUNC mode. So we add this feature by changing the mode of opening the
 file from O_TRUNC mode to O_APPEND.
 
 ### Background
-
+In this part, a process is needed to be distinguished by the background checker, if “&” is detected at the end of the line, the bg_flag is changed to 1.
+So we need to add a condition after the waitpid in both the pipeline and regular commands blocks. We use bg_pro to check if there still exists a background process. If it does, then we will use waitpid with an option of WNOHANG which will return 0 immediately and keep processing the following codes. At each
+time a new command is typed in through shell, it will again check if the background process is done to print the corresponding complete message.
 ## Summary
 The hard part is to combine the redirection with the piping, which requires a
 brand new parse since the function we write before that unfortunately didn't
