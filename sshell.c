@@ -13,21 +13,32 @@
 
 struct CMD {
         char *args[ARGS_MAX];
-        int arg_nums;
-        int pipe_nums;
 };
+
+
+void bg_handler() {
+         pid_t pid_child;
+         int status;
+         while ((pid_child = waitpid(-1,&status,WNOHANG))>0){
+                signal(SIGCHLD, SIG_IGN);
+         }
+        //  while (()>0) {
+        //         
+        //         printf("within handler while loop\n");
+        // //         fprintf(stderr, "+ completed [%d] \n",
+        // //          WEXITSTATUS(status));
+        // }
+}
 
 struct CMD parse(struct CMD command, char* cmd) {
         char *token;  // current string/token
         int index = 0;
         token = strtok(cmd, " ");
-        command.arg_nums = 0;
         while (token != NULL) {
                 // method to keep reading words from a string from https://www.runoob.com/cprogramming/c-function-strtok.html
                 command.args[index] = token;
                 token = strtok(NULL, " ");
                 index++;
-                command.arg_nums = index;
         }
         command.args[index] = NULL;
         return command;
@@ -55,7 +66,7 @@ int redirection_check(char* cmd) {
 }
 
 
-int redirection(char* cmd) {
+void redirection(char* cmd) {
         int cmd_length = strlen(cmd);
         int start = 0;
         int end = 0;
@@ -75,6 +86,8 @@ int redirection(char* cmd) {
                 }
         }
 
+        // printf("start is: %d\n", start);
+
         for (int j = start; j < cmd_length; j++) {
                 if (cmd[j] == ' ') {
                         end = j - 1;
@@ -83,9 +96,10 @@ int redirection(char* cmd) {
                 end = j;
         }
 
+        // printf("end is: %d\n", end);
+
         // creat a string according to the length(end - start)
         int dir_len = end - start + 1;
-        // printf("Dir length is: %d\n", dir_len);
         char directory[dir_len];
         // copy the string content from cmd
         for (int k = 0 ; k < dir_len; k++) {
@@ -93,14 +107,12 @@ int redirection(char* cmd) {
         }
         // end the string
         directory[dir_len] = '\0';
-
-        if (dir_len == 1 && directory[0] == '>') {
-                fprintf(stderr, "Error: no output file\n");
-                return 1;
-        }
-        // printf("Current dir is: %s\n", directory);
+        // printf("text is: %s\n", directory);
+        // printf("text length is: %d\n", dir_len);
 
         // find the path or place that we want to use for fd
+        // printf("Directory is %s\n", directory);
+        // printf("Append flag is: %d\n", append_flag);
         if (append_flag == 1) {
                 fd = open(directory, O_CREAT | O_WRONLY | O_APPEND, 0600);
         } else {
@@ -108,28 +120,24 @@ int redirection(char* cmd) {
         }
         if (fd < 0) {
                 perror("open");
-                fprintf(stderr, "Error: no output file\n");
-                return 1;
+                exit(EXIT_FAILURE);
         }
         dup2(fd, STDOUT_FILENO);
         close(fd);
-        return 0;
 }
 
-bool pipeline_check(struct CMD *CMD, char *cmd) {
+bool pipeline_check(char *cmd) {
         int Pip_flag = 0;
         int cmd_length = strlen(cmd);
-        CMD->pipe_nums = 0;
         for (int i = 0; i <= cmd_length; i++) {
                 if(cmd[i] == '|') {
                         Pip_flag = 1;
-                        CMD->pipe_nums++;
                 }
         }
         return Pip_flag;
 }
 
-void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_flag) {
+void pipeline(char *cmd, char* cmd_duplicate, int redirection_flag) {
         // char *redirectionfile_cmd[MAX_PIPE];
         // char cmd_duplicate_output[CMDLINE_MAX];
         // strcpy(cmd_duplicate_output,cmd_duplicate);
@@ -138,13 +146,10 @@ void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_f
         char *cmds[MAX_PIPE];
         int count = 0;
         while (token != NULL) {
+                
                 cmds[count] = token;
                 token = strtok(NULL, "|");
-                count++;
-        }
-        if (CMD->pipe_nums >= count) {
-                fprintf(stderr, "Error: missing command\n");
-                return;
+                count++ ;
         }
         int pipes[count][2];
         int status_list[count+1];
@@ -159,7 +164,7 @@ void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_f
                 while (separate_arg != NULL) {
                         args[arg_count] = separate_arg;
                         //printf("%s\n",args[arg_count]);
-                        arg_count++;
+                        arg_count ++ ;
                         separate_arg = strtok(NULL, " ");
                 }
                 args[arg_count] = NULL;
@@ -179,7 +184,6 @@ void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_f
                         }
                         if (redirection_flag != 0 && j == count -1) {
                                 char cmd_for_redirect[CMDLINE_MAX];
-                                int error_flag;
                                 strcpy(cmd_for_redirect,cmd_duplicate);
                                 printf("%s\n",cmd_for_redirect);
                                 char *token_redirect = strtok(cmd_for_redirect, "|");
@@ -191,10 +195,7 @@ void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_f
                                         token_redirect = strtok(NULL, "|");
                                         count_redirect++ ;
                                 }
-                                error_flag = redirection(cmds_redirect[count_redirect-1]);
-                                if (error_flag != 0) {
-                                        exit(1);
-                                }
+                                redirection(cmds_redirect[count_redirect-1]);
                         }
                         execvp(args[0],args);
                 } else if (pid > 0) {
@@ -223,19 +224,14 @@ void pipeline(struct CMD *CMD, char *cmd, char* cmd_duplicate, int redirection_f
         }    
 }
 
-void execution(char Prev_cmd[], char cmd[], int redirection_flag) {
+void execution(char Prev_cmd[], char cmd[], int redirection_flag, int bg_flag) {
         struct CMD CMD = parse(CMD, cmd);
-        int error_flag;
-        if (CMD.arg_nums >= ARGS_MAX) {
-                fprintf(stderr, "Error: too many process arguments\n");
-                return;
-        }
         /* Builtin command */
         if (!strcmp(CMD.args[0], "exit")) {
                 fprintf(stderr, "Bye...\n");
                 fprintf(stderr, "+ completed '%s' [%d]\n",
                         Prev_cmd, 0);
-                return;
+                exit(0);
         } else if (!strcmp(CMD.args[0], "cd")) {
                 int ret = chdir(CMD.args[1]);
                 if (ret != 0) {
@@ -257,47 +253,93 @@ void execution(char Prev_cmd[], char cmd[], int redirection_flag) {
                 // retval = system(cmd);
                 // fprintf(stdout, "Return status value for '%s': %d\n",
                 //         cmd, retval);
-                pid_t pid = 0;
-                int status;
+                pid_t pid = fork();
                 //char *args[] = {cmd,"-u",NULL};
-                pid = fork();
                 if (pid == 0) {
                         if (redirection_flag != 0) {
-                                error_flag = redirection(Prev_cmd);
-                                if (error_flag != 0) {
-                                        return;
-                                }
+                                redirection(Prev_cmd);
                         }
                         execvp(CMD.args[0],CMD.args);
                         perror("execvp");
                         exit(1);
                 }
                 if (pid > 0) {
-                        pid = waitpid(pid, &status, 0);
-                        fprintf(stderr, "+ completed '%s' [%d]\n",
-                        Prev_cmd, WEXITSTATUS(status));
+                        int status;
+                        // int bg_result;
+                        //fprintf(stderr,"bg_flag :%d\n",bg_flag);
+                        if (bg_flag == 1){
+                                printf("ruuning in the background %d\n",pid);
+                                // bg_result = waitpid(pid,&status,WNOHANG);
+                                // if(bg_result == pid){
+                                //         fprintf(stderr, "+ completeddddd '%s' [%d] \n",
+                                //         Prev_cmd, WEXITSTATUS(status));      
+                                // }
+                                struct sigaction sa;
+                                sigfillset(&sa.sa_mask);
+                                sa.sa_handler = bg_handler;
+                                sa.sa_flags = 0;
+                                sigaction(SIGCHLD, &sa, NULL);
+     
+                        } else {
+                                pid = waitpid(pid, &status, 0);
+                                fprintf(stderr, "+ completedd '%s' [%d] \n",
+                                Prev_cmd, WEXITSTATUS(status));
+                        } 
+
                 }
         }
 }
 
+
+bool background_check(char *cmd) {
+        int bg_flag = 0;
+        int cmd_length = strlen(cmd);
+        for (int i = 0; i <= cmd_length; i++) {
+                if(cmd[i] == '&') {
+                        bg_flag = 1;
+                        cmd[i] = ' ';
+                }
+        }
+        return bg_flag;
+}
+
 int main(void)
 {
+        
         char cmd[CMDLINE_MAX];
         char pipeline_cmd[CMDLINE_MAX];
         char pipeline_cmd_arg2[CMDLINE_MAX];
         char Prev_cmd[CMDLINE_MAX];
-        struct CMD CMD;
+        char bg_cmd[CMDLINE_MAX];
+        int bg_pid = 0;
+        int bg_pro = 0;
         // since parse would change the cmd, so creating a new string to store the origin version
         while (1) {
+                
                 char *nl;
                 //int retval;
 
                 /* Print prompt */
-                printf("sshell@ucd$ ");
+                printf("sshell$ ");
                 fflush(stdout);
 
                 /* Get command line */
                 fgets(cmd, CMDLINE_MAX, stdin);
+                if(!(strcmp(cmd,"\n"))) {
+                        continue;
+                }
+                if (bg_pro > 0){
+                       // printf("bg_pid at main %d",bg_pid);
+                        int status;
+                        int bg_result = waitpid(bg_pid,&status, WNOHANG);
+                       // printf("bg_result = %d \n",bg_result);
+                        if(bg_result > 0){
+                                fprintf(stderr, "+ completed '%s' [%d] \n",
+                                bg_cmd, WEXITSTATUS(status));
+                                bg_pro -= 1;
+                                bg_pid = 0 ;
+                        }
+                }
                 /* Print command line if stdin is not provided by terminal */
                 if (!isatty(STDIN_FILENO)) {
                         printf("%s", cmd);
@@ -312,13 +354,71 @@ int main(void)
                 strcpy(pipeline_cmd, cmd);
                 strcpy(pipeline_cmd_arg2, cmd);   
                 int redirection_flag = redirection_check(cmd);
-                int pipline_flag = pipeline_check(&CMD, cmd);
+                int pipline_flag = pipeline_check(cmd);
+                int bg_flag = background_check(cmd);
                 if(pipline_flag == 1) {
                         // pipeline instruction
-                        pipeline(&CMD, cmd, pipeline_cmd_arg2, redirection_flag);
+                        pipeline(cmd, pipeline_cmd_arg2, redirection_flag);
                 } else  {
                         // execution without piping
-                        execution(Prev_cmd, cmd, redirection_flag);
+                        struct CMD CMD = parse(CMD, cmd);
+                                /* Builtin command */
+                                if (!strcmp(CMD.args[0], "exit")) {
+                                        fprintf(stderr, "Bye...\n");
+                                        fprintf(stderr, "+ completed '%s' [%d]\n",
+                                                Prev_cmd, 0);
+                                        exit(0);
+                                } else if (!strcmp(CMD.args[0], "cd")) {
+                                        int ret = chdir(CMD.args[1]);
+                                        if (ret != 0) {
+                                                fprintf(stderr, "Error: cannot cd into directory");
+                                                fprintf(stderr, "+ completed '%s' [%d]\n",
+                                                Prev_cmd, WEXITSTATUS(ret));
+                                                continue;
+                                        }
+                                        fprintf(stderr, "+ completed '%s' [%d]\n",
+                                        Prev_cmd, WEXITSTATUS(ret));
+                                } else if (!strcmp(CMD.args[0], "pwd")) {
+                                        char* cur_path = NULL;
+                                        cur_path = getcwd(cur_path, 0);
+                                        fprintf(stdout, "%s\n", cur_path);
+                                        fprintf(stderr, "+ completed '%s' [%d]\n",
+                                        Prev_cmd, 0);
+                                } else {
+                                        /* Regular command */
+                                        // retval = system(cmd);
+                                        // fprintf(stdout, "Return status value for '%s': %d\n",
+                                        //         cmd, retval);
+                                        pid_t pid = fork();
+                                        int status;
+                                        //char *args[] = {cmd,"-u",NULL};
+                                        if (pid == 0) {
+                                                if (redirection_flag != 0) {
+                                                        redirection(Prev_cmd);
+                                                }
+                                                execvp(CMD.args[0],CMD.args);
+                                                perror("execvp");
+                                                exit(1);
+                                        }
+                                        if (pid > 0) {
+                                                
+                                                // int bg_result;
+                                                //fprintf(stderr,"bg_flag :%d\n",bg_flag);
+                                                if (bg_flag == 1){
+                                                       // printf("ruuning in the background %d\n",pid);
+                                                        bg_pid = pid;
+                                                        bg_pro += 1;
+                                                        strcpy(bg_cmd,Prev_cmd);
+                                                       // printf("bg_pid == %d\n",bg_pid);
+                                                        
+                                                } else {
+                                                        pid = waitpid(pid, &status, 0);
+                                                        fprintf(stderr, "+ completed '%s' [%d] \n",
+                                                        Prev_cmd, WEXITSTATUS(status));
+                                                } 
+
+                                        }
+                                }
                 }
         }
         return EXIT_SUCCESS;
