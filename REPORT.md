@@ -18,6 +18,14 @@ same struct.
 ## Execution with piping
 
 ## Redirection
+We write two functions for redirection. First we check if there's redirection
+symbol before the execution and setting a flag if there is one. The reason for
+that is we want to make sure we could identify there's redirection need to
+handle before executing. The advantage of that is we could clearly know where's
+the error(if any) in the testing process by checking the flag. And if the flag
+indicates there's redirection, our program would goes into another function
+Redirection() to do the execution, which is setting the output from terminal
+STDOUT to input filename.
 
 ## Extra feature
 ### Appending
