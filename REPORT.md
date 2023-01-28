@@ -19,16 +19,9 @@ same struct.
 ## Execution with piping
 A different parse method is needed for the piping since we introduce a new
 character “|”. we use a similar method to the one in the parsing function by
-using strtok().count records pipes number and used to create pipes. Since all
-commands in pipes are execute cocurrently. We use for loop to execute each
-commands. We again parse each command separate by space and store them into a
-executable format(Ended with NULL). After that fork to create child and parent
-processes. In child process we basically building a bridge between each commands
-by connecting the stdin and stdout to each file descriptor's corresponding port
-and also close the unsed port. After doing that we simply let child execute the
-command. In the parent process, we close the previously used descriptor 's port
-and store the WEXITSTATUS(status) into a list. In the case which is supposed to
-be the last command to be execute
+using strtok(). count records pipes number and used to create pipes. Since all commands in pipes are executed cocurrently. We use for loop to execute each commands. We again parse each command separately by space and store them into an executable format(Ended with NULL).
+After that fork to create child and parent processes. In the child process, we basically build a bridge between each command by connecting the stdin and stdout to each file descriptor's corresponding port and also closing the unused port. After doing that we simply let the child execute the command. In the parent process, we close the previously used descriptor's port and store the WEXITSTATUS(status) in a list. In the case which is supposed to be the last command to be executed. we use waitpid to wait for the child to be done. Then print the complete code with a list of statuses we just stored.
+
 
 ## Redirection
 We write two functions for redirection. First we check if there's redirection
