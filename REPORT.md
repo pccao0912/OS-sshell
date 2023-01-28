@@ -42,4 +42,10 @@ file from O_TRUNC mode to O_APPEND.
 
 ### Background
 
-## Summray
+## Summary
+The hard part is to combine the redirection with the piping, which requires a
+brand new parse since the function we write before that unfortunately didn't
+have that function so we come up with a new one, which increase the redundancy.
+For the error management part, we fix and add those function accoring to only
+the instruction, so these part might not cover all corner cases even though we
+created some and tested. 
