@@ -374,7 +374,7 @@ int main(void)
                                 if (ret != 0) {
                                         fprintf(stderr, "Error: cannot cd into directory\n");
                                         fprintf(stderr, "+ completed '%s' [%d]\n",
-                                        Prev_cmd, WEXITSTATUS(ret));
+                                        Prev_cmd, 1);
                                         continue;
                                 }
                                 fprintf(stderr, "+ completed '%s' [%d]\n",
@@ -403,12 +403,13 @@ int main(void)
                                         execvp(CMD.args[0],CMD.args);
                                         if (errno = ENOENT) {
                                                 fprintf(stderr, "Error: command not found\n");
+                                                fprintf(stderr, "+ completed '%s' [%d]\n",
+                                                Prev_cmd, 1);
                                                 continue;
                                         }
                                         exit(1);
                                 }
                                 if (pid > 0) {
-                                       
                                         // int bg_result;
                                         //fprintf(stderr,"bg_flag :%d\n",bg_flag);
                                         if (bg_flag == 1){
