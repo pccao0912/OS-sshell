@@ -58,7 +58,11 @@ commands blocks. We use bg_pro to check if there still exists a background
 process. If it does, then we will use waitpid with an option of WNOHANG which
 will return 0 immediately and keep processing the following codes. At each time
 a new command is typed in through shell, it will again check if the background
-process is done to print the corresponding complete message.
+process is done to print the corresponding complete message. A important thing 
+needed to be addressed here is that since we have fork() in both pipe and 
+regular commands, we need to have the thes two background complete message 
+process on both parts in order for processing the following commands after the
+background process.
 
 ## Summary
 The hard part is to combine the redirection with the piping, which requires a
