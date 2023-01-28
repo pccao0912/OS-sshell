@@ -17,6 +17,18 @@ struct CMD {
         int pipe_nums;
 };
 
+int commandCheck(char *cmd) {
+        int cmd_length = strlen(cmd);
+        int valid_char = 0;
+        for (int i = 0; i < cmd_length; i++) {
+                if(valid_char == 0 && cmd[i] == '>') {
+                        return 1;
+                } else if (cmd[i] != '>' && cmd[i] != ' '){
+                        valid_char++;
+                }
+        }
+        return 0;
+}
 
 void bg_handler() {
          pid_t pid_child;
@@ -297,7 +309,12 @@ int main(void)
                         *nl = '\0';
                 strcpy(Prev_cmd, cmd);
                 strcpy(pipeline_cmd, cmd);
-                strcpy(pipeline_cmd_arg2, cmd);   
+                strcpy(pipeline_cmd_arg2, cmd);
+                int command_flag = commandCheck(cmd);
+                if (command_flag != 0) {
+                        fprintf(stderr, "Error: missing command\n");
+                        continue;
+                }
                 int redirection_flag = redirection_check(cmd);
                 int pipline_flag = pipeline_check(&CMD, cmd);
                 int bg_flag = background_check(cmd);
