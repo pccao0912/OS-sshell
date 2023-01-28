@@ -32,6 +32,14 @@ int commandCheck(char *cmd) {
         return 0;
 }
 
+void bg_handler() {
+         pid_t pid_child;
+         int status;
+         while ((pid_child = waitpid(-1,&status,WNOHANG))>0){
+                signal(SIGCHLD, SIG_IGN);
+         }
+}
+
 struct CMD parse(struct CMD command, char* cmd) {
         char *token;  // current string/token
         int index = 0;
@@ -272,57 +280,54 @@ int main(void)
                                         execvp(args[0],args);
                                 } else if (pid > 0) {
                                         //parent
-                                if (j > 0) {
-                                        close(pipes[j-1][0]);
-                                        close(pipes[j-1][1]);
-                                }
-                                if(j == count - 1) {
-                                        if (bg_pro > 0){
-                                                bg_pid = pid;
-                                                printf("ruuning in the background %d\n",bg_pid);
-                                                
-                                                strcpy(bg_cmd,pipeline_cmd_arg2);
-                                                
-                                        } else {
-                                                pid = waitpid(pid, &status, 0);
+                                        if (j > 0) {
+                                                close(pipes[j-1][0]);
+                                                close(pipes[j-1][1]);
+                                        }
+                                        if(j == count - 1) {
                                                 if (bg_pro > 0){
-                                                        int status;
-                                                        int bg_result = waitpid(bg_pid,&status, WNOHANG);
-                                                        if(bg_result > 0){
-                                                                if (bg_pipe_indicator != 1){
-                                                                        fprintf(stderr, "+ completed '%s' [%d]\n",
-                                                                        bg_cmd, WEXITSTATUS(status));
-                                                                } else {
-                                                                        fprintf(stderr, "+ completed '%s' ",bg_cmd);
-                                                                        for (int h = 0; h < bg_pipe_count; h++) {
-                                                                                fprintf(stderr, "[%d]", WEXITSTATUS(bg_status_list[h]));
+                                                        bg_pid = pid;
+                                                        printf("ruuning in the background %d\n",bg_pid);
+                                                        strcpy(bg_cmd,pipeline_cmd_arg2);
+                                                } else {
+                                                        pid = waitpid(pid, &status, 0);
+                                                        if (bg_pro > 0){
+                                                                int status;
+                                                                int bg_result = waitpid(bg_pid,&status, WNOHANG);
+                                                                if(bg_result > 0){
+                                                                        if (bg_pipe_indicator != 1){
+                                                                                fprintf(stderr, "+ completed '%s' [%d]\n",
+                                                                                bg_cmd, WEXITSTATUS(status));
+                                                                        } else {
+                                                                                fprintf(stderr, "+ completed '%s' ",bg_cmd);
+                                                                                for (int h = 0; h < bg_pipe_count; h++) {
+                                                                                        fprintf(stderr, "[%d]", WEXITSTATUS(bg_status_list[h]));
+                                                                                }
+                                                                                fprintf(stderr,"[%d]",WEXITSTATUS(status));
+                                                                                fprintf(stderr, "\n");
                                                                         }
-                                                                        fprintf(stderr,"[%d]",WEXITSTATUS(status));
-                                                                        fprintf(stderr, "\n");
+                                                                        bg_pro = 0 ;
+                                                                        bg_pid = 0 ;
+                                                                        bg_pipe_indicator = 0;
                                                                 }
-                                                                bg_pro = 0 ;
-                                                                bg_pid = 0 ;
-                                                                bg_pipe_indicator = 0;
                                                         }
+                                                        fprintf(stderr, "+ completed '%s' ", pipeline_cmd_arg2);
+                                                        for (int h = 0; h < count-1; h++) {
+                                                                fprintf(stderr, "[%d]", WEXITSTATUS(status_list[h]));
+                                                        }
+                                                        fprintf(stderr,"[%d]",WEXITSTATUS(status));
+                                                        fprintf(stderr, "\n");
+                                                }       
+                                        } else {
+                                                if(bg_flag == 1 ||bg_pro > 0){
+                                                        bg_pro += 1;
+                                                        bg_pipe_count += 1;
+                                                        bg_status_list[j] = WEXITSTATUS(status);
+                                                        bg_pipe_indicator = 1;
                                                 }
-                                                fprintf(stderr, "+ completed '%s' ", pipeline_cmd_arg2);
-                                                for (int h = 0; h < count-1; h++) {
-                                                        fprintf(stderr, "[%d]", WEXITSTATUS(status_list[h]));
-                                                }
-                                                fprintf(stderr,"[%d]",WEXITSTATUS(status));
-                                                fprintf(stderr, "\n");
+                                                status_list[j] = WEXITSTATUS(status);
                                         }
-                                        
-                                } else {
-                                        if(bg_flag == 1 ||bg_pro > 0){
-                                                bg_pro += 1;
-                                                bg_pipe_count += 1;
-                                                bg_status_list[j] = WEXITSTATUS(status);
-                                                bg_pipe_indicator = 1;
-                                        }
-                                        status_list[j] = WEXITSTATUS(status);
                                 }
-                            }
                         }    
                 } else  {
                         // execution without piping
